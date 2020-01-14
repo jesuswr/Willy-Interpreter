@@ -2,7 +2,7 @@
 
   An Interpreter for the subject "Traductores e Interpretadores" (Translators and Interpreters) of the Simon Bolivar University (USB).
   
-  Autors:
+  Authors:
   
   Neil Villamizar  15-11523
   
