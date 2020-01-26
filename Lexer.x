@@ -203,7 +203,7 @@ pushTK :: ((Int, Int) -> Token) -> AlexInput -> Int -> Alex Token
 pushTK tok ( (AlexPn _ l c ) , _ , _ , _ ) len = return ( tok (l,c) )
 
 pushInt :: AlexInput -> Int -> Alex Token
-pushInt ( (AlexPn _ l c ) , _ , _ , str ) len = return ( TKInt (l,c) ( read $ take len str ) )Right toks -> d
+pushInt ( (AlexPn _ l c ) , _ , _ , str ) len = return ( TKInt (l,c) ( read $ take len str ) )
 
 pushId :: AlexInput -> Int -> Alex Token
 pushId ( (AlexPn _ l c ) , _ , _ , str ) len = return ( TKId (l,c) ( take len str) )
@@ -216,8 +216,6 @@ runAlexScan s = runAlex s $ alexMonadScan
 
 scanner :: String -> Either String [Token]
 scanner str = 
-
-    where cosa = 
     let loop = do
         tok <- alexMonadScan
         startCode <- alexGetStartCode
@@ -231,4 +229,20 @@ scanner str =
         else do toks <- loop
                 return ([tok] ++ toks)
     in  auxF( runAlex str loop )  
+
+auxF :: ( Either String [Token] ) -> Either String [Token]
+auxF (Left str) = Left str
+auxF (Right toks)
+       | length errorList > 0 = Left $ strError errorList  
+       | otherwise  = Right toks
+       where errorList = [x | x <- toks, isError x]
+
+strError :: [Token] -> String
+strError errorList = unlines $ map (show) errorList
+
+isError :: Token -> Bool
+isError (TKerror _ _) = True
+isError (TKcommentEOFError) = True
+isError _ = False
+
 }
