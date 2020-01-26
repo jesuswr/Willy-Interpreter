@@ -1,8 +1,8 @@
 {
-module Lexer
+module Lexer where
 }
 
-%wrapper "posn"
+%wrapper "monad"
 
 $digit = 0-9
 $alpha = [a-zA-Z]
@@ -10,181 +10,223 @@ $alphaNum = [a-zA-Z0-9]
 
 tokens :-
     -- spaces
-    [$white # \\n]*         ;
+<0>    [$white # \n]+             { skip }
 
-    -- comments
-    \-\-.*                  ;
-    
+   -- comments
+<0>    \-\-.*                      { skip }
+
     -- end line
-    \\n                         {\(AlexPn _ l c) str -> TKendLine}
+<0>    \n                         { pushTK TKendLine }
 
     -- reserved words
-    begin\-world                {\(AlexPn _ l c) str -> TKbeginWorld l c}
-    end\-world                  {\(AlexPn _ l c) str -> TKendWorld l c}
-    World                       {\(AlexPn _ l c) str -> TKWorld l c}
-    wall                        {\(AlexPn _ l c) str -> TKwall l c}
-    from                        {\(AlexPn _ l c) str -> TKfrom l c}
-    to                          {\(AlexPn _ l c) str -> TKto l c}
-    Object\-type                {\(AlexPn _ l c) str -> TkObjectType l c}
-    of                          {\(AlexPn _ l c) str -> TKof l c}
-    color                       {\(AlexPn _ l c) str -> TKcolor l c}
-    red                         {\(AlexPn _ l c) str -> TKred l c}
-    blue                        {\(AlexPn _ l c) str -> TKblue l c}
-    mangenta                    {\(AlexPn _ l c) str -> TKmangenta l c}
-    cyan                        {\(AlexPn _ l c) str -> TKcyan l c}
-    green                       {\(AlexPn _ l c) str -> TKgreen l c}
-    yellow                      {\(AlexPn _ l c) str -> TKyellow l c}
-    Place                       {\(AlexPn _ l c) str -> TKPlace l c}
-    at                          {\(AlexPn _ l c) str -> TKat l c}
-    basket                      {\(AlexPn _ l c) str -> TKbasket l c}
-    in                          {\(AlexPn _ l c) str -> TKin l c}
-    Start                       {\(AlexPn _ l c) str -> TKStart l c}
-    heading                     {\(AlexPn _ l c) str -> TKheading l c}
-    capacity                    {\(AlexPn _ l c) str -> TKcapacity l c}
-    Boolean                     {\(AlexPn _ l c) str -> TKBoolean l c}
-    true                        {\(AlexPn _ l c) str -> TKtrue l c}
-    false                       {\(AlexPn _ l c) str -> TKfalse l c}
-    with                        {\(AlexPn _ l c) str -> TKwith l c}
-    initial                     {\(AlexPn _ l c) str -> TKinitial l c}
-    value                       {\(AlexPn _ l c) str -> TKvalue l c}
-    Goal                        {\(AlexPn _ l c) str -> TKGoal l c}
-    is                          {\(AlexPn _ l c) str -> TKis l c}
-    Final                       {\(AlexPn _ l c) str -> TKFinal l c}
-    goal                        {\(AlexPn _ l c) str -> TKgoal l c}
-    willy                       {\(AlexPn _ l c) str -> TKwilly l c}
-    objects                     {\(AlexPn _ l c) str -> TKobjects l c}
-    and                         {\(AlexPn _ l c) str -> TKand l c}
-    or                          {\(AlexPn _ l c) str -> TKor l c}
-    not                         {\(AlexPn _ l c) str -> TKnot l c}
-    begin\-work                 {\(AlexPn _ l c) str -> TKbeginWork l c}
-    on                          {\(AlexPn _ l c) str -> TKon l c}
-    end\-work                   {\(AlexPn _ l c) str -> TKendWork l c}
-    if                          {\(AlexPn _ l c) str -> TKif l c}
-    else                        {\(AlexPn _ l c) str -> TKelse l c}
-    then                        {\(AlexPn _ l c) str -> TKthen l c}
-    repeat                      {\(AlexPn _ l c) str -> TKrepeat l c}
-    times                       {\(AlexPn _ l c) str -> TKtimes l c}
-    while                       {\(AlexPn _ l c) str -> TKwhile l c}
-    do                          {\(AlexPn _ l c) str -> TKdo l c}
-    begin                       {\(AlexPn _ l c) str -> TKbegin l c}
-    end                         {\(AlexPn _ l c) str -> TKend l c}
-    define                      {\(AlexPn _ l c) str -> TKdefine l c}
-    as                          {\(AlexPn _ l c) str -> TKas l c}
-    move                        {\(AlexPn _ l c) str -> TKmove l c}
-    turn\-right                 {\(AlexPn _ l c) str -> TKturnRight l c}
-    turn\-left                  {\(AlexPn _ l c) str -> TKturnLeft l c}
-    pick                        {\(AlexPn _ l c) str -> TKpick l c}
-    drop                        {\(AlexPn _ l c) str -> TKdrop l c}
-    set                         {\(AlexPn _ l c) str -> TKset l c}
-    clear                       {\(AlexPn _ l c) str -> TKclear l c}
-    flip                        {\(AlexPn _ l c) str -> TKflip l c}
-    terminate                   {\(AlexPn _ l c) str -> TKterminate l c}
-    found                       {\(AlexPn _ l c) str -> TKfound l c}
-    carrying                    {\(AlexPn _ l c) str -> TKcarrying l c}
-    front\-clear                {\(AlexPn _ l c) str -> TKfrontClear l c}
-    left\-clear                 {\(AlexPn _ l c) str -> TKleftClear l c}
-    right\-clear                {\(AlexPn _ l c) str -> TKrightClear l c}
-    looking\-north              {\(AlexPn _ l c) str -> TKlookingNorth l c}
-    looking\-east               {\(AlexPn _ l c) str -> TKlookingEast l c}
-    looking\-south              {\(AlexPn _ l c) str -> TKlookingSouth l c}
-    looking\-west               {\(AlexPn _ l c) str -> TKlookingWest l c}
+<0>    begin\-world                { pushTK TKbeginWorld }
+<0>    end\-world                  { pushTK TKendWorld }
+<0>    World                       { pushTK TKWorld }
+<0>    wall                        { pushTK TKwall }
+<0>    from                        { pushTK TKfrom }
+<0>    to                          { pushTK TKto }
+<0>    Object\-type                { pushTK TKObjectType }
+<0>    of                          { pushTK TKof }
+<0>    color                       { pushTK TKcolor }
+<0>    red                         { pushTK TKred }
+<0>    blue                        { pushTK TKblue }
+<0>    mangenta                    { pushTK TKmangenta }
+<0>    cyan                        { pushTK TKcyan }
+<0>    green                       { pushTK TKgreen }
+<0>    yellow                      { pushTK TKyellow }
+<0>    Place                       { pushTK TKPlace }
+<0>    at                          { pushTK TKat }
+<0>    basket                      { pushTK TKbasket }
+<0>    in                          { pushTK TKin }
+<0>    Start                       { pushTK TKStart }
+<0>    heading                     { pushTK TKheading }
+<0>    capacity                    { pushTK TKcapacity }
+<0>    Boolean                     { pushTK TKBoolean }
+<0>    true                        { pushTK TKtrue }
+<0>    false                       { pushTK TKfalse }
+<0>    with                        { pushTK TKwith }
+<0>    initial                     { pushTK TKinitial }
+<0>    value                       { pushTK TKvalue }
+<0>    Goal                        { pushTK TKGoal }
+<0>    is                          { pushTK TKis }
+<0>    Final                       { pushTK TKFinal }
+<0>    goal                        { pushTK TKgoal }
+<0>    willy                       { pushTK TKwilly }
+<0>    objects                     { pushTK TKobjects }
+<0>    and                         { pushTK TKand }
+<0>    or                          { pushTK TKor }
+<0>    not                         { pushTK TKnot }
+<0>    begin\-work                 { pushTK TKbeginWork }
+<0>    on                          { pushTK TKon }
+<0>    end\-work                   { pushTK TKendWork }
+<0>    if                          { pushTK TKif }
+<0>    else                        { pushTK TKelse }
+<0>    then                        { pushTK TKthen }
+<0>    repeat                      { pushTK TKrepeat }
+<0>    times                       { pushTK TKtimes }
+<0>    while                       { pushTK TKwhile }
+<0>    do                          { pushTK TKdo }
+<0>    begin                       { pushTK TKbegin }
+<0>    end                         { pushTK TKend }
+<0>    define                      { pushTK TKdefine }
+<0>    as                          { pushTK TKas }
+<0>    move                        { pushTK TKmove }
+<0>    turn\-right                 { pushTK TKturnRight }
+<0>    turn\-left                  { pushTK TKturnLeft }
+<0>    pick                        { pushTK TKpick }
+<0>    drop                        { pushTK TKdrop }
+<0>    set                         { pushTK TKset }
+<0>    clear                       { pushTK TKclear }
+<0>    flip                        { pushTK TKflip }
+<0>    terminate                   { pushTK TKterminate }
+<0>    found                       { pushTK TKfound }
+<0>    carrying                    { pushTK TKcarrying }
+<0>    front\-clear                { pushTK TKfrontClear }
+<0>    left\-clear                 { pushTK TKleftClear }
+<0>    right\-clear                { pushTK TKrightClear }
+<0>    looking\-north              { pushTK TKlookingNorth }
+<0>    looking\-east               { pushTK TKlookingEast }
+<0>    looking\-south              { pushTK TKlookingSouth }
+<0>    looking\-west               { pushTK TKlookingWest }
 
-    -- numbers and identifiers
-    $digit+                     {\(AlexPn _ l c) str -> TKInt (read str) l c}
-    $alphaNum[$alphaNum \_]*    {\(AlexPn _ l c) str -> TKId str l c}
+   -- numbers and identifiers
+<0>    $digit+                     { pushInt }
+<0>    [$alpha \_][$alphaNum \_]*  { pushId }
 
     -- symbols
-    \(                          {\(AlexPn _ l c) str -> TKopenBracket l c}
-    \)                          {\(AlexPn _ l c) str -> TKcloseBracket l c}
-    \;                          {\(AlexPn _ l c) str -> TKsemicolon l c}
+<0>    \(                          { pushTK TKopenBracket }
+<0>    \)                          { pushTK TKcloseBracket }
+<0>    \;                          { pushTK TKsemicolon }
+
+    -- block comment
+<0>    \{\{                        { andBegin skip blockComment }
+<blockComment>   \{\{              { pushError }
+<blockComment>   \}\}\n            { andBegin skip 0 }
+<blockComment>   \}\}              { andBegin skip 0 }
+<blockComment>   [.\n]             { skip }
 
     -- error
-    .                           {\(AlexPn _ l c) str -> TKerror (head str) l c}
+<0>    \}\}                        { pushError }
+<0>    .                           { pushError }
 
 {
 
-data token =
-    TKendLine int int       |
+data Token =
+    TKendLine {tokenPos :: (Int,Int) }                   |
 
-    TKbeginWorld Int Int    |
-    TKendWorld Int Int      |
-    TKWorld Int Int         |
-    TKwall Int Int          |
-    TKfrom Int Int          |
-    TKto Int Int            |
-    TkObjectType Int Int    |
-    TKof Int Int            |
-    TKcolor Int Int         |
-    TKred Int Int           |
-    TKblue Int Int          |
-    TKmangenta Int Int      |
-    TKcyan Int Int          |
-    TKgreen Int Int         |
-    TKyellow Int Int        |
-    TKPlace Int Int         |
-    TKat Int Int            |
-    TKbasket Int Int        |
-    TKin Int Int            |
-    TKStart Int Int         |
-    TKheading Int Int       |
-    TKcapacity Int Int      |
-    TKBoolean Int Int       |
-    TKtrue Int Int          |
-    TKfalse Int Int         |
-    TKwith Int Int          |
-    TKinitial Int Int       |
-    TKvalue Int Int         |
-    TKGoal Int Int          |
-    TKis Int Int            |
-    TKFinal Int Int         |
-    TKgoal Int Int          |
-    TKwilly Int Int         |
-    TKobjects Int Int       |
-    TKand Int Int           |
-    TKor Int Int            |
-    TKnot Int Int           |
-    TKbeginWork Int Int     |
-    TKon Int Int            |
-    TKendWork Int Int       |
-    TKif Int Int            |
-    TKelse Int Int          |
-    TKthen Int Int          |
-    TKrepeat Int Int        |
-    TKtimes Int Int         |
-    TKwhile Int Int         |
-    TKdo Int Int            |
-    TKbegin Int Int         |
-    TKend Int Int           |
-    TKdefine Int Int        |
-    TKas Int Int            |
-    TKmove Int Int          |
-    TKturnRight Int Int     |
-    TKturnLeft Int Int      |
-    TKpick Int Int          |
-    TKdrop Int Int          |
-    TKset Int Int           |
-    TKclear Int Int         |
-    TKflip Int Int          |
-    TKterminate Int Int     |
-    TKfound Int Int         |
-    TKcarrying Int Int      |
-    TKfrontClear Int Int    |
-    TKleftClear Int Int     |
-    TKrightClear Int Int    |
-    TKlookingNorth Int Int  |
-    TKlookingEast Int Int   |
-    TKlookingSouth Int Int  |
-    TKlookingWest Int Int   |
+    TKbeginWorld {tokenPos :: (Int,Int) }                |
+    TKendWorld {tokenPos :: (Int,Int) }                  |
+    TKWorld {tokenPos :: (Int,Int) }                     |
+    TKwall {tokenPos :: (Int,Int) }                      |
+    TKfrom {tokenPos :: (Int,Int) }                      |
+    TKto {tokenPos :: (Int,Int) }                        |
+    TKObjectType {tokenPos :: (Int,Int) }                |
+    TKof {tokenPos :: (Int,Int) }                        |
+    TKcolor {tokenPos :: (Int,Int) }                     |
+    TKred {tokenPos :: (Int,Int) }                       |
+    TKblue {tokenPos :: (Int,Int) }                      |
+    TKmangenta {tokenPos :: (Int,Int) }                  |
+    TKcyan {tokenPos :: (Int,Int) }                      |
+    TKgreen {tokenPos :: (Int,Int) }                     |
+    TKyellow {tokenPos :: (Int,Int) }                    |
+    TKPlace {tokenPos :: (Int,Int) }                     |
+    TKat {tokenPos :: (Int,Int) }                        |
+    TKbasket {tokenPos :: (Int,Int) }                    |
+    TKin {tokenPos :: (Int,Int) }                        |
+    TKStart {tokenPos :: (Int,Int) }                     |
+    TKheading {tokenPos :: (Int,Int) }                   |
+    TKcapacity {tokenPos :: (Int,Int) }                  |
+    TKBoolean {tokenPos :: (Int,Int) }                   |
+    TKtrue {tokenPos :: (Int,Int) }                      |
+    TKfalse {tokenPos :: (Int,Int) }                     |
+    TKwith {tokenPos :: (Int,Int) }                      |
+    TKinitial {tokenPos :: (Int,Int) }                   |
+    TKvalue {tokenPos :: (Int,Int) }                     |
+    TKGoal {tokenPos :: (Int,Int) }                      |
+    TKis {tokenPos :: (Int,Int) }                        |
+    TKFinal {tokenPos :: (Int,Int) }                     |
+    TKgoal {tokenPos :: (Int,Int) }                      |
+    TKwilly {tokenPos :: (Int,Int) }                     |
+    TKobjects {tokenPos :: (Int,Int) }                   |
+    TKand {tokenPos :: (Int,Int) }                       |
+    TKor {tokenPos :: (Int,Int) }                        |
+    TKnot {tokenPos :: (Int,Int) }                       |
+    TKbeginWork {tokenPos :: (Int,Int) }                 |
+    TKon {tokenPos :: (Int,Int) }                        |
+    TKendWork {tokenPos :: (Int,Int) }                   |
+    TKif {tokenPos :: (Int,Int) }                        |
+    TKelse {tokenPos :: (Int,Int) }                      |
+    TKthen {tokenPos :: (Int,Int) }                      |
+    TKrepeat {tokenPos :: (Int,Int) }                    |
+    TKtimes {tokenPos :: (Int,Int) }                     |
+    TKwhile {tokenPos :: (Int,Int) }                     |
+    TKdo {tokenPos :: (Int,Int) }                        |
+    TKbegin {tokenPos :: (Int,Int) }                     |
+    TKend {tokenPos :: (Int,Int) }                       |
+    TKdefine {tokenPos :: (Int,Int) }                    |
+    TKas {tokenPos :: (Int,Int) }                        |
+    TKmove {tokenPos :: (Int,Int) }                      |
+    TKturnRight {tokenPos :: (Int,Int) }                 |
+    TKturnLeft {tokenPos :: (Int,Int) }                  |
+    TKpick {tokenPos :: (Int,Int) }                      |
+    TKdrop {tokenPos :: (Int,Int) }                      |
+    TKset {tokenPos :: (Int,Int) }                       |
+    TKclear {tokenPos :: (Int,Int) }                     |
+    TKflip {tokenPos :: (Int,Int) }                      |
+    TKterminate {tokenPos :: (Int,Int) }                 |
+    TKfound {tokenPos :: (Int,Int) }                     |
+    TKcarrying {tokenPos :: (Int,Int) }                  |
+    TKfrontClear {tokenPos :: (Int,Int) }                |
+    TKleftClear {tokenPos :: (Int,Int) }                 |
+    TKrightClear {tokenPos :: (Int,Int) }                |
+    TKlookingNorth {tokenPos :: (Int,Int) }              |
+    TKlookingEast {tokenPos :: (Int,Int) }               |
+    TKlookingSouth {tokenPos :: (Int,Int) }              |
+    TKlookingWest {tokenPos :: (Int,Int) }               |
 
-    TKInt Int Int Int       |
-    TKId String Int Int     |
+    TKInt {tokenPos :: (Int,Int) , getValue :: Int }     |
+    TKId {tokenPos :: (Int,Int) , getStr :: String }     |
 
-    TKopenBracket Int Int   |
-    TKcloseBracket Int Int  |
-    TKsemicolon Int Int     |
+    TKopenBracket {tokenPos :: (Int,Int) }               |
+    TKcloseBracket {tokenPos :: (Int,Int) }              |
+    TKsemicolon {tokenPos :: (Int,Int) }                 |
 
-    Tkerror Char Int Int 
+    TKerror {tokenPos :: (Int,Int) , getChar :: Char}    |
+    TKcommentEOFError                                    |
+    TKEOF
+    deriving(Eq,Show)
+
+alexEOF :: Alex Token
+alexEOF = return TKEOF
+
+pushTK :: ((Int, Int) -> Token) -> AlexInput -> Int -> Alex Token
+pushTK tok ( (AlexPn _ l c ) , _ , _ , _ ) len = return ( tok (l,c) )
+
+pushInt :: AlexInput -> Int -> Alex Token
+pushInt ( (AlexPn _ l c ) , _ , _ , str ) len = return ( TKInt (l,c) ( read $ take len str ) )
+
+pushId :: AlexInput -> Int -> Alex Token
+pushId ( (AlexPn _ l c ) , _ , _ , str ) len = return ( TKId (l,c) ( take len str) )
 
 
-    
+pushError :: AlexInput -> Int -> Alex Token
+pushError ( (AlexPn _ l c ) , _ , _ , str ) len = return ( TKerror (l,c) ( head str ) )
+
+runAlexScan s = runAlex s $ alexMonadScan   
+
+scanner :: String -> Either String [Token]
+scanner str = 
+    let loop = do
+        tok <- alexMonadScan
+        startCode <- alexGetStartCode
+        if (tok == TKEOF )
+        then do
+                if ( startCode == 0 )
+                    then do 
+                    return []
+                else do
+                    return [TKcommentEOFError]
+        else do toks <- loop
+                return ([tok] ++ toks)
+    in runAlex str loop  
 }
