@@ -10,13 +10,11 @@ $alphaNum = [a-zA-Z0-9]
 
 tokens :-
     -- spaces
-<0>    [$white # \n]               { pushTK TKspace }
+<0>    [$white # \n]+              { skip }
+<0>    \n                          { pushTK TKendLine }       
 
    -- comments
 <0>    \-\-.*                      { skip }
-
-    -- end line
-<0>    \n                          { pushTK TKendLine }
 
     -- reserved words
 <0>    begin\-world                { pushTK TKbeginWorld }
@@ -106,8 +104,8 @@ tokens :-
 <0>    \{\{                        { andBegin skip blockComment }
 <blockComment>   \{\{              { pushError }
 <blockComment>   \}\}              { andBegin skip 0 }
-<blockComment>   \n                { pushTK TKendLine }
 <blockComment>   .                 { skip }
+<blockComment>   \n                { pushTK TKendLine }
 
     -- error
 <0>    \}\}                        { pushError }
@@ -116,7 +114,6 @@ tokens :-
 {
 
 data Token =
-    TKspace {tokenPos :: (Int,Int) }                     |
     TKendLine {tokenPos :: (Int,Int) }                   |
 
     TKbeginWorld {tokenPos :: (Int,Int) }                |
@@ -204,7 +201,6 @@ data Token =
 
 instance Show Token where
     show ( TKendLine _ )              = "\n"
-    show ( TKspace _ )                = " "
 
     show ( TKbeginWorld (l,c) )       = "TKbeginWorld(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKendWorld (l,c) )         = "TKendWorld(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
@@ -336,4 +332,17 @@ isError :: Token -> Bool
 isError (TKerror _ _) = True
 isError (TKcommentEOFError) = True
 isError _ = False
+
+strTokens :: [Token] -> [String]
+strTokens tks = strTokens' (-1,-1) tks
+    where strTokens' _ []             = []
+          strTokens' (-1,-1) (x:xs)   = getTokWithSpaces' x  ++ strTokens' (tokenPos x) xs
+          strTokens' (l,c)   (x:xs)
+              | l == getLine' x       = [show x] ++ strTokens' (tokenPos x) xs
+              | otherwise             = getTokWithSpaces' x  ++ strTokens' (tokenPos x) xs
+
+          getLine' tok                = fst $ tokenPos tok 
+          getColumn' tok              = snd $ tokenPos tok  
+          getSpaces' x                = take x $ repeat " "
+          getTokWithSpaces' x         = (getSpaces' ( getColumn' x - 1 ) ) ++ [show x] 
 }

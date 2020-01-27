@@ -30,5 +30,5 @@ wrongFormatInput = do putStrLn ( "Formato incorrecto: demasiados argumentos." )
 showResults :: String -> IO ()
 showResults str = case scanner str of
                     Left s -> putStr s
-                    Right toks -> do mapM_ (putStr . show) toks
+                    Right toks -> do mapM_ putStr $ strTokens toks
                                      return ()
