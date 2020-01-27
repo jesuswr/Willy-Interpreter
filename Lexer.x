@@ -89,8 +89,11 @@ tokens :-
 <0>    looking\-south              { pushTK TKlookingSouth }
 <0>    looking\-west               { pushTK TKlookingWest }
 
-   -- numbers and identifiers
-<0>    $digit+\                    { pushInt }
+   -- numbers
+<0>    $digit+                     { pushInt }
+
+    -- identifiers
+<0>    $digit[$alphaNum \_]+       { pushError }
 <0>    [$alpha \_][$alphaNum \_]*  { pushId }
 
     -- symbols
@@ -276,8 +279,8 @@ instance Show Token where
     show ( TKcloseBracket (l,c) )     = "TKcloseBracket (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKsemicolon (l,c) )        = "TKsemicolon (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
 
-    show ( TKerror (l,c) char )       = "Caraceter ilegal " ++ show char ++ " encontrado en linea " ++ show l ++ ", columna " ++ show c ++ ".\n"
-    show ( TKcommentEOFError )        = "Error: se alcanzo el final del archivo antes de cerrar un comentario de bloque.\n"
+    show ( TKerror (l,c) char )       = "Caraceter ilegal " ++ show char ++ " encontrado en linea " ++ show l ++ ", columna " ++ show c ++ "."
+    show ( TKcommentEOFError )        = "Error: se alcanzo el final del archivo antes de cerrar un comentario de bloque."
 
 
 alexEOF :: Alex Token
@@ -311,7 +314,7 @@ scanner str =
                 else do
                     return [TKcommentEOFError]
         else do toks <- loop
-                return ([tok] ++ toks)
+                return (tok:toks)
     in  auxF( runAlex str loop )  
 
 auxF :: ( Either String [Token] ) -> Either String [Token]
@@ -328,5 +331,4 @@ isError :: Token -> Bool
 isError (TKerror _ _) = True
 isError (TKcommentEOFError) = True
 isError _ = False
-
 }
