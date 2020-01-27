@@ -4,6 +4,7 @@ willy: Lexer
 Lexer: Lexer.x
 	alex Lexer.x
 
-Clear:
+clear:
+	rm willy
 	rm *.o 
 	rm *.hi
