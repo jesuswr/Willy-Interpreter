@@ -40,9 +40,6 @@ tokens :-
 <0>    heading                     { pushTK TKheading }
 <0>    Basket                      { pushTK TKBasket }
 <0>    capacity                    { pushTK TKcapacity }
-<0>    Boolean                     { pushTK TKBoolean }
-<0>    true                        { pushTK TKtrue }
-<0>    false                       { pushTK TKfalse }
 <0>    with                        { pushTK TKwith }
 <0>    initial                     { pushTK TKinitial }
 <0>    value                       { pushTK TKvalue }
@@ -88,7 +85,12 @@ tokens :-
 <0>    looking\-south              { pushTK TKlookingSouth }
 <0>    looking\-west               { pushTK TKlookingWest }
 
-   -- numbers
+    -- Boolean
+<0>    Boolean                     { pushTK TKBoolean }
+<0>    true                        { pushTK TKtrue }
+<0>    false                       { pushTK TKfalse }
+
+    -- numbers
 <0>    $digit+                     { pushInt }
 
     -- identifiers
@@ -101,9 +103,9 @@ tokens :-
 <0>    \;                          { pushTK TKsemicolon }
 
     -- block comment
-<0>    \{\{                        { andBegin skip blockComment }
+<0>    \{\{                        { andBegin skip blockComment } -- If {{ is found, move to 'blockComment' startCode
 <blockComment>   \{\{              { pushError }
-<blockComment>   \}\}              { andBegin skip 0 }
+<blockComment>   \}\}              { andBegin skip 0 }            -- If }} is found, return to initial startCode
 <blockComment>   .                 { skip }
 <blockComment>   \n                { pushTK TKendLine }
 
@@ -113,6 +115,7 @@ tokens :-
 
 {
 
+-- The Token type
 data Token =
     TKendLine {tokenPos :: (Int,Int) }                   |
 
@@ -139,9 +142,6 @@ data Token =
     TKheading {tokenPos :: (Int,Int) }                   |
     TKBasket {tokenPos :: (Int,Int) }                    |
     TKcapacity {tokenPos :: (Int,Int) }                  |
-    TKBoolean {tokenPos :: (Int,Int) }                   |
-    TKtrue {tokenPos :: (Int,Int) }                      |
-    TKfalse {tokenPos :: (Int,Int) }                     |
     TKwith {tokenPos :: (Int,Int) }                      |
     TKinitial {tokenPos :: (Int,Int) }                   |
     TKvalue {tokenPos :: (Int,Int) }                     |
@@ -187,6 +187,10 @@ data Token =
     TKlookingSouth {tokenPos :: (Int,Int) }              |
     TKlookingWest {tokenPos :: (Int,Int) }               |
 
+    TKBoolean {tokenPos :: (Int,Int) }                   |
+    TKtrue {tokenPos :: (Int,Int) }                      |
+    TKfalse {tokenPos :: (Int,Int) }                     |
+
     TKInt {tokenPos :: (Int,Int) , getValue :: Int }     |
     TKId {tokenPos :: (Int,Int) , getStr :: String }     |
 
@@ -225,9 +229,6 @@ instance Show Token where
     show ( TKheading (l,c) )          = "TKheading(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKBasket (l,c) )           = "TKBasket(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKcapacity (l,c) )         = "TKcapacity(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKBoolean (l,c) )          = "TKBoolean(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKtrue (l,c) )             = "TKtrue(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKfalse (l,c) )            = "TKfalse(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKwith (l,c) )             = "TKwith(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKinitial (l,c) )          = "TKinitial(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKvalue (l,c) )            = "TKvalue(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
@@ -272,6 +273,10 @@ instance Show Token where
     show ( TKlookingEast (l,c) )      = "TKlookingEast(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKlookingSouth (l,c) )     = "TKlookingSouth(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKlookingWest (l,c) )      = "TKlookingWest(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+
+    show ( TKBoolean (l,c) )          = "TKBoolean(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKtrue (l,c) )             = "TKtrue(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKfalse (l,c) )            = "TKfalse(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     
     show ( TKInt (l,c) num )          = "TKInt(" ++ show num ++ ", linea=" ++ show l ++", columna=" ++ show c ++") " 
     show ( TKId (l,c) str )           = "TKId(\"" ++ str ++ "\", linea=" ++ show l ++", columna=" ++ show c ++") "
@@ -284,9 +289,11 @@ instance Show Token where
     show ( TKcommentEOFError )        = "Error: se alcanzo el final del archivo antes de cerrar un comentario de bloque."
 
 
+-- Definition needed by Alex
 alexEOF :: Alex Token
 alexEOF = return TKEOF
 
+-- push Token functions
 pushTK :: ((Int, Int) -> Token) -> AlexInput -> Int -> Alex Token
 pushTK tok ( (AlexPn _ l c ) , _ , _ , _ ) len = return ( tok (l,c) )
 
@@ -296,12 +303,10 @@ pushInt ( (AlexPn _ l c ) , _ , _ , str ) len = return ( TKInt (l,c) ( read $ ta
 pushId :: AlexInput -> Int -> Alex Token
 pushId ( (AlexPn _ l c ) , _ , _ , str ) len = return ( TKId (l,c) ( take len str) )
 
-
 pushError :: AlexInput -> Int -> Alex Token
 pushError ( (AlexPn _ l c ) , _ , _ , str ) len = return ( TKerror (l,c) ( head str ) )
 
-runAlexScan s = runAlex s $ alexMonadScan   
-
+-- Scanner 
 scanner :: String -> Either String [Token]
 scanner str = 
     let loop = do
@@ -318,6 +323,7 @@ scanner str =
                 return (tok:toks)
     in  auxF( runAlex str loop )  
 
+-- Function that helps returning the error message or the list of tokens
 auxF :: ( Either String [Token] ) -> Either String [Token]
 auxF (Left str) = Left str
 auxF (Right toks)
@@ -325,6 +331,7 @@ auxF (Right toks)
        | otherwise  = Right toks
        where errorList = [x | x <- toks, isError x]
 
+-- Function to make a string with all the errors in the token list
 strError :: [Token] -> String
 strError errorList = unlines $ map (show) errorList
 
@@ -333,14 +340,17 @@ isError (TKerror _ _) = True
 isError (TKcommentEOFError) = True
 isError _ = False
 
+-- Function that given a list of tokens, returns a list of strings that
+-- represent each token, with the format given in the project specifications
 strTokens :: [Token] -> [String]
 strTokens tks = strTokens' (-1,-1) tks
-    where strTokens' _ []             = []
-          strTokens' (-1,-1) (x:xs)   = getTokWithSpaces' x  ++ strTokens' (tokenPos x) xs
-          strTokens' (l,c)   (x:xs)
-              | l == getLine' x       = [show x] ++ strTokens' (tokenPos x) xs
-              | otherwise             = getTokWithSpaces' x  ++ strTokens' (tokenPos x) xs
+    where strTokens' _ []                    = []
+          strTokens' (-1,-1) (x:xs)          = getTokWithSpaces' x  ++ strTokens' (tokenPos x) xs
+          strTokens' (prevTokLine,prevTokCol) (x:xs)
+              | prevTokLine == getLine' x    = [show x] ++ strTokens' (tokenPos x) xs
+              | otherwise                    = getTokWithSpaces' x  ++ strTokens' (tokenPos x) xs
 
+          -- helpful functions
           getLine' tok                = fst $ tokenPos tok 
           getColumn' tok              = snd $ tokenPos tok  
           getSpaces' x                = take x $ repeat " "
