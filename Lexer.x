@@ -10,13 +10,13 @@ $alphaNum = [a-zA-Z0-9]
 
 tokens :-
     -- spaces
-<0>    [$white # \n]+             { skip }
+<0>    [$white # \n]               { pushTK TKspace }
 
    -- comments
 <0>    \-\-.*                      { skip }
 
     -- end line
-<0>    \n                         { pushTK TKendLine }
+<0>    \n                          { pushTK TKendLine }
 
     -- reserved words
 <0>    begin\-world                { pushTK TKbeginWorld }
@@ -40,6 +40,7 @@ tokens :-
 <0>    in                          { pushTK TKin }
 <0>    Start                       { pushTK TKStart }
 <0>    heading                     { pushTK TKheading }
+<0>    Basket                      { pushTK TKBasket }
 <0>    capacity                    { pushTK TKcapacity }
 <0>    Boolean                     { pushTK TKBoolean }
 <0>    true                        { pushTK TKtrue }
@@ -56,7 +57,7 @@ tokens :-
 <0>    and                         { pushTK TKand }
 <0>    or                          { pushTK TKor }
 <0>    not                         { pushTK TKnot }
-<0>    begin\-work                 { pushTK TKbeginWork }
+<0>    begin\-task                 { pushTK TKbeginTask }
 <0>    on                          { pushTK TKon }
 <0>    end\-work                   { pushTK TKendWork }
 <0>    if                          { pushTK TKif }
@@ -104,9 +105,9 @@ tokens :-
     -- block comment
 <0>    \{\{                        { andBegin skip blockComment }
 <blockComment>   \{\{              { pushError }
-<blockComment>   \}\}\n            { andBegin skip 0 }
 <blockComment>   \}\}              { andBegin skip 0 }
-<blockComment>   [.\n]             { skip }
+<blockComment>   \n                { pushTK TKendLine }
+<blockComment>   .                 { skip }
 
     -- error
 <0>    \}\}                        { pushError }
@@ -115,6 +116,7 @@ tokens :-
 {
 
 data Token =
+    TKspace {tokenPos :: (Int,Int) }                     |
     TKendLine {tokenPos :: (Int,Int) }                   |
 
     TKbeginWorld {tokenPos :: (Int,Int) }                |
@@ -138,6 +140,7 @@ data Token =
     TKin {tokenPos :: (Int,Int) }                        |
     TKStart {tokenPos :: (Int,Int) }                     |
     TKheading {tokenPos :: (Int,Int) }                   |
+    TKBasket {tokenPos :: (Int,Int) }                    |
     TKcapacity {tokenPos :: (Int,Int) }                  |
     TKBoolean {tokenPos :: (Int,Int) }                   |
     TKtrue {tokenPos :: (Int,Int) }                      |
@@ -154,7 +157,7 @@ data Token =
     TKand {tokenPos :: (Int,Int) }                       |
     TKor {tokenPos :: (Int,Int) }                        |
     TKnot {tokenPos :: (Int,Int) }                       |
-    TKbeginWork {tokenPos :: (Int,Int) }                 |
+    TKbeginTask {tokenPos :: (Int,Int) }                 |
     TKon {tokenPos :: (Int,Int) }                        |
     TKendWork {tokenPos :: (Int,Int) }                   |
     TKif {tokenPos :: (Int,Int) }                        |
@@ -201,83 +204,85 @@ data Token =
 
 instance Show Token where
     show ( TKendLine _ )              = "\n"
+    show ( TKspace _ )                = " "
 
-    show ( TKbeginWorld (l,c) )       = "TKbeginWorld (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKendWorld (l,c) )         = "TKendWorld (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKWorld (l,c) )            = "TKWorld (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKwall (l,c) )             = "TKwall (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKfrom (l,c) )             = "TKfrom (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKto (l,c) )               = "TKto (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKObjectType (l,c) )       = "TKObjectType (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKof (l,c) )               = "TKof (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKcolor (l,c) )            = "TKcolor (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKred (l,c) )              = "TKred (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKblue (l,c) )             = "TKblue (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKmangenta (l,c) )         = "TKmangenta (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKcyan (l,c) )             = "TKcyan (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKgreen (l,c) )            = "TKgreen (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKyellow (l,c) )           = "TKyellow (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKPlace (l,c) )            = "TKPlace (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKat (l,c) )               = "TKat (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKbasket (l,c) )           = "TKbasket (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKin (l,c) )               = "TKin (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKStart (l,c) )            = "TKStart (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKheading (l,c) )          = "TKheading (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKcapacity (l,c) )         = "TKcapacity (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKBoolean (l,c) )          = "TKBoolean (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKtrue (l,c) )             = "TKtrue (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKfalse (l,c) )            = "TKfalse (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKwith (l,c) )             = "TKwith (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKinitial (l,c) )          = "TKinitial (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKvalue (l,c) )            = "TKvalue (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKGoal (l,c) )             = "TKGoal (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKis (l,c) )               = "TKis (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKFinal (l,c) )            = "TKFinal (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKgoal (l,c) )             = "TKgoal (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKwilly (l,c) )            = "TKwilly (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKobjects (l,c) )          = "TKobjects (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKand (l,c) )              = "TKand (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKor (l,c) )               = "TKor (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKnot (l,c) )              = "TKnot (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKbeginWork (l,c) )        = "TKbeginWork (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKon (l,c) )               = "TKon (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKendWork (l,c) )          = "TKendWork (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKif (l,c) )               = "TKif (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKelse (l,c) )             = "TKelse (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKthen (l,c) )             = "TKthen (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKrepeat (l,c) )           = "TKrepeat (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKtimes (l,c) )            = "TKtimes (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKwhile (l,c) )            = "TKwhile (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKdo (l,c) )               = "TKdo (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKbegin (l,c) )            = "TKbegin (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKend (l,c) )              = "TKend (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKdefine (l,c) )           = "TKdefine (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKas (l,c) )               = "TKas (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKmove (l,c) )             = "TKmove (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKturnRight (l,c) )        = "TKturnRight (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKturnLeft (l,c) )         = "TKturnLeft (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKpick (l,c) )             = "TKpick (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKdrop (l,c) )             = "TKdrop (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKset (l,c) )              = "TKset (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKclear (l,c) )            = "TKclear (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKflip (l,c) )             = "TKflip (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKterminate (l,c) )        = "TKterminate (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKfound (l,c) )            = "TKfound (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKcarrying (l,c) )         = "TKcarrying (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKfrontClear (l,c) )       = "TKfrontClear (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKleftClear (l,c) )        = "TKleftClear (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKrightClear (l,c) )       = "TKrightClear (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKlookingNorth (l,c) )     = "TKlookingNorth (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKlookingEast (l,c) )      = "TKlookingEast (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKlookingSouth (l,c) )     = "TKlookingSouth (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKlookingWest (l,c) )      = "TKlookingWest (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKbeginWorld (l,c) )       = "TKbeginWorld(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKendWorld (l,c) )         = "TKendWorld(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKWorld (l,c) )            = "TKWorld(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKwall (l,c) )             = "TKwall(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKfrom (l,c) )             = "TKfrom(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKto (l,c) )               = "TKto(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKObjectType (l,c) )       = "TKObjectType(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKof (l,c) )               = "TKof(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKcolor (l,c) )            = "TKcolor(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKred (l,c) )              = "TKred(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKblue (l,c) )             = "TKblue(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKmangenta (l,c) )         = "TKmangenta(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKcyan (l,c) )             = "TKcyan(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKgreen (l,c) )            = "TKgreen(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKyellow (l,c) )           = "TKyellow(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKPlace (l,c) )            = "TKPlace(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKat (l,c) )               = "TKat(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKbasket (l,c) )           = "TKbasket(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKin (l,c) )               = "TKin(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKStart (l,c) )            = "TKStart(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKheading (l,c) )          = "TKheading(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKBasket (l,c) )           = "TKBasket(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKcapacity (l,c) )         = "TKcapacity(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKBoolean (l,c) )          = "TKBoolean(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKtrue (l,c) )             = "TKtrue(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKfalse (l,c) )            = "TKfalse(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKwith (l,c) )             = "TKwith(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKinitial (l,c) )          = "TKinitial(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKvalue (l,c) )            = "TKvalue(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKGoal (l,c) )             = "TKGoal(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKis (l,c) )               = "TKis(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKFinal (l,c) )            = "TKFinal(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKgoal (l,c) )             = "TKgoal(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKwilly (l,c) )            = "TKwilly(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKobjects (l,c) )          = "TKobjects(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKand (l,c) )              = "TKand(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKor (l,c) )               = "TKor(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKnot (l,c) )              = "TKnot(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKbeginTask (l,c) )        = "TKbeginTask(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKon (l,c) )               = "TKon(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKendWork (l,c) )          = "TKendWork(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKif (l,c) )               = "TKif(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKelse (l,c) )             = "TKelse(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKthen (l,c) )             = "TKthen(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKrepeat (l,c) )           = "TKrepeat(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKtimes (l,c) )            = "TKtimes(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKwhile (l,c) )            = "TKwhile(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKdo (l,c) )               = "TKdo(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKbegin (l,c) )            = "TKbegin(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKend (l,c) )              = "TKend(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKdefine (l,c) )           = "TKdefine(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKas (l,c) )               = "TKas(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKmove (l,c) )             = "TKmove(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKturnRight (l,c) )        = "TKturnRight(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKturnLeft (l,c) )         = "TKturnLeft(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKpick (l,c) )             = "TKpick(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKdrop (l,c) )             = "TKdrop(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKset (l,c) )              = "TKset(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKclear (l,c) )            = "TKclear(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKflip (l,c) )             = "TKflip(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKterminate (l,c) )        = "TKterminate(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKfound (l,c) )            = "TKfound(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKcarrying (l,c) )         = "TKcarrying(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKfrontClear (l,c) )       = "TKfrontClear(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKleftClear (l,c) )        = "TKleftClear(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKrightClear (l,c) )       = "TKrightClear(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKlookingNorth (l,c) )     = "TKlookingNorth(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKlookingEast (l,c) )      = "TKlookingEast(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKlookingSouth (l,c) )     = "TKlookingSouth(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKlookingWest (l,c) )      = "TKlookingWest(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     
-    show ( TKInt (l,c) num )          = "TKInt (" ++ show num ++ ", linea=" ++ show l ++", columna=" ++ show c ++")"
-    show ( TKId (l,c) str )           = "TKId (" ++ str ++ ", linea=" ++ show l ++", columna=" ++ show c ++")"
+    show ( TKInt (l,c) num )          = "TKInt(" ++ show num ++ ", linea=" ++ show l ++", columna=" ++ show c ++") " 
+    show ( TKId (l,c) str )           = "TKId(\"" ++ str ++ "\", linea=" ++ show l ++", columna=" ++ show c ++") "
 
-    show ( TKopenBracket (l,c) )      = "TKopenBracket (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKcloseBracket (l,c) )     = "TKcloseBracket (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKsemicolon (l,c) )        = "TKsemicolon (linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKopenBracket (l,c) )      = "TKopenBracket(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKcloseBracket (l,c) )     = "TKcloseBracket(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKsemicolon (l,c) )        = "TKsemicolon(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
 
     show ( TKerror (l,c) char )       = "Caraceter ilegal " ++ show char ++ " encontrado en linea " ++ show l ++ ", columna " ++ show c ++ "."
     show ( TKcommentEOFError )        = "Error: se alcanzo el final del archivo antes de cerrar un comentario de bloque."
