@@ -362,6 +362,7 @@ strTokens tks = strTokens' (-1,-1) tks
     where strTokens' _ []                    = []
           strTokens' (-1,-1) (x:xs)          = getTokWithSpaces' x  ++ strTokens' (tokenPos x) xs
           strTokens' (prevTokLine,prevTokCol) (x:xs)
+              | isTKendLine x                = [show x] ++ strTokens' (tokenPos x) xs 
               | prevTokLine == getLine' x    = [show x] ++ strTokens' (tokenPos x) xs
               | otherwise                    = getTokWithSpaces' x  ++ strTokens' (tokenPos x) xs
 
@@ -369,6 +370,7 @@ strTokens tks = strTokens' (-1,-1) tks
           getLine' tok                = fst $ tokenPos tok 
           getColumn' tok              = snd $ tokenPos tok  
           getSpaces' x                = take x $ repeat " "
-          getTokWithSpaces' x         = (getSpaces' ( getColumn' x - 1 ) ) ++ [show x] 
-
+          getTokWithSpaces' x         = (getSpaces' ( getColumn' x - 1 ) ) ++ [show x]
+          isTKendLine (TKendLine _)   = True
+          isTKendLine _               = False
 }
