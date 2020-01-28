@@ -8,6 +8,7 @@ $digit = 0-9
 $alpha = [a-zA-Z]
 $alphaNum = [a-zA-Z0-9]
 
+
 tokens :-
     -- spaces
 <0>    [$white # \n]+              { skip }
@@ -211,6 +212,7 @@ data Token =
     TKEOF
     deriving(Eq)
 
+-- Here is defined how the Token type is an instance of Show typeclass
 instance Show Token where
     show ( TKendLine _ )              = "\n"
 
@@ -347,6 +349,7 @@ auxF (Right toks)
 strError :: [Token] -> String
 strError errorList = unlines $ map (show) errorList
 
+-- Function to check if a given token represents an error
 isError :: Token -> Bool
 isError (TKerror _ _) = True
 isError (TKcommentEOFError) = True
