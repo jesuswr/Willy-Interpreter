@@ -8,7 +8,7 @@ En el archivo Lexer.x primero definimos el wrapper a usar, en este caso usamos '
 Seguidamente definimos algunas macros para mayor comodidad y legibilidad en la siguiente parte, estas fueron: digit (digitos), alpha (letras) y alphaNum (letras y digitos).
 
 Luego se encuentran las definiciones de las regex que son de tipo:
-> <startCode>      regex       { action }
+> startCode      regex       { action }
 
 Donde el startCode es lo que explicamos antes, regex es una expresion regular y action es la accion que realizara alex si hace match con esa regex.
 
