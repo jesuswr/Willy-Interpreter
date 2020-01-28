@@ -1,5 +1,6 @@
 willy: Lexer
 	ghc --make Willy.hs -o willy
+	mv ./willy $$HOME/bin
 
 Lexer: Lexer.x
 	alex Lexer.x
