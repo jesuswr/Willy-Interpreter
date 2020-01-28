@@ -20,7 +20,7 @@ tokens :-
 <0>    begin\-world                { pushTK TKbeginWorld }
 <0>    end\-world                  { pushTK TKendWorld }
 <0>    World                       { pushTK TKWorld }
-<0>    wall                        { pushTK TKwall }
+<0>    Wall                        { pushTK TKwall }
 <0>    from                        { pushTK TKfrom }
 <0>    to                          { pushTK TKto }
 <0>    Object\-type                { pushTK TKObjectType }
@@ -54,7 +54,7 @@ tokens :-
 <0>    not                         { pushTK TKnot }
 <0>    begin\-task                 { pushTK TKbeginTask }
 <0>    on                          { pushTK TKon }
-<0>    end\-work                   { pushTK TKendWork }
+<0>    end\-task                   { pushTK TKendTask }
 <0>    if                          { pushTK TKif }
 <0>    else                        { pushTK TKelse }
 <0>    then                        { pushTK TKthen }
@@ -84,6 +84,10 @@ tokens :-
 <0>    looking\-east               { pushTK TKlookingEast }
 <0>    looking\-south              { pushTK TKlookingSouth }
 <0>    looking\-west               { pushTK TKlookingWest }
+<0>    north                       { pushTK TKnorth }
+<0>    east                        { pushTK TKeast }
+<0>    south                       { pushTK TKsouth }
+<0>    west                        { pushTK TKwest }
 
     -- Boolean
 <0>    Boolean                     { pushTK TKBoolean }
@@ -156,7 +160,7 @@ data Token =
     TKnot {tokenPos :: (Int,Int) }                       |
     TKbeginTask {tokenPos :: (Int,Int) }                 |
     TKon {tokenPos :: (Int,Int) }                        |
-    TKendWork {tokenPos :: (Int,Int) }                   |
+    TKendTask {tokenPos :: (Int,Int) }                   |
     TKif {tokenPos :: (Int,Int) }                        |
     TKelse {tokenPos :: (Int,Int) }                      |
     TKthen {tokenPos :: (Int,Int) }                      |
@@ -186,6 +190,10 @@ data Token =
     TKlookingEast {tokenPos :: (Int,Int) }               |
     TKlookingSouth {tokenPos :: (Int,Int) }              |
     TKlookingWest {tokenPos :: (Int,Int) }               |
+    TKnorth {tokenPos :: (Int,Int) }                     |
+    TKsouth {tokenPos :: (Int,Int) }                     |
+    TKeast {tokenPos :: (Int,Int) }                      |
+    TKwest {tokenPos :: (Int,Int) }                      |
 
     TKBoolean {tokenPos :: (Int,Int) }                   |
     TKtrue {tokenPos :: (Int,Int) }                      |
@@ -243,7 +251,7 @@ instance Show Token where
     show ( TKnot (l,c) )              = "TKnot(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKbeginTask (l,c) )        = "TKbeginTask(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKon (l,c) )               = "TKon(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKendWork (l,c) )          = "TKendWork(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKendTask (l,c) )          = "TKendTask(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKif (l,c) )               = "TKif(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKelse (l,c) )             = "TKelse(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKthen (l,c) )             = "TKthen(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
@@ -273,6 +281,10 @@ instance Show Token where
     show ( TKlookingEast (l,c) )      = "TKlookingEast(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKlookingSouth (l,c) )     = "TKlookingSouth(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKlookingWest (l,c) )      = "TKlookingWest(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKnorth (l,c) )            = "TKnorth(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKsouth (l,c) )            = "TKsouth(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKeast (l,c) )             = "TKeast(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKwest (l,c) )             = "TKwest(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
 
     show ( TKBoolean (l,c) )          = "TKBoolean(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKtrue (l,c) )             = "TKtrue(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
@@ -355,4 +367,5 @@ strTokens tks = strTokens' (-1,-1) tks
           getColumn' tok              = snd $ tokenPos tok  
           getSpaces' x                = take x $ repeat " "
           getTokWithSpaces' x         = (getSpaces' ( getColumn' x - 1 ) ) ++ [show x] 
+
 }

@@ -23,8 +23,8 @@ runLexer filePath = do fileExists <- doesFileExist filePath
 
 wrongFormatInput :: IO ()
 wrongFormatInput = do putStrLn ( "Formato incorrecto: demasiados argumentos." )
-                      putStrLn ( "Formato correcto 1: \n./Willy <archivo>" )
-                      putStrLn ( "Formato correcto 2: \n./Willy\nArchivo a Interpretar: <archivo>" )
+                      putStrLn ( "Formato correcto 1: \n./willy <archivo>" )
+                      putStrLn ( "Formato correcto 2: \n./willy\nArchivo a Interpretar: <archivo>" )
 
 
 showResults :: String -> IO ()
