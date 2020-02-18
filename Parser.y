@@ -94,8 +94,8 @@ import Lexer
     Id                       { TKId _ _ }
 
     -- Symbols
-    '{'                      { TKopenBracket _ }
-    '}'                      { TKcloseBracket _ }
+    '('                      { TKopenBracket _ }
+    ')'                      { TKcloseBracket _ }
     ';'                      { TKsemicolon _ }
 
 -- Precedence list
