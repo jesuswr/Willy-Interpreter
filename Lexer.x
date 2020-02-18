@@ -11,8 +11,7 @@ $alphaNum = [a-zA-Z0-9]
 
 tokens :-
     -- spaces
-<0>    [$white # \n]+              { skip }
-<0>    \n                          { pushTK TKendLine }       
+<0>    [$white ]+              { skip }
 
    -- comments
 <0>    \-\-.*                      { skip }
@@ -112,7 +111,7 @@ tokens :-
 <blockComment>   \{\{              { pushError }
 <blockComment>   \}\}              { andBegin skip 0 }            -- If }} is found, return to initial startCode
 <blockComment>   .                 { skip }
-<blockComment>   \n                { pushTK TKendLine }
+<blockComment>   \n                { skip }
 
     -- error
 <0>    \}\}                        { pushError }
@@ -122,8 +121,6 @@ tokens :-
 
 -- The Token type
 data Token =
-    TKendLine {tokenPos :: (Int,Int) }                   |
-
     TKbeginWorld {tokenPos :: (Int,Int) }                |
     TKendWorld {tokenPos :: (Int,Int) }                  |
     TKWorld {tokenPos :: (Int,Int) }                     |
@@ -214,8 +211,6 @@ data Token =
 
 -- Here is defined how the Token type is an instance of Show typeclass
 instance Show Token where
-    show ( TKendLine _ )              = "\n"
-
     show ( TKbeginWorld (l,c) )       = "TKbeginWorld(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKendWorld (l,c) )         = "TKendWorld(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKWorld (l,c) )            = "TKWorld(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
@@ -355,22 +350,4 @@ isError (TKerror _ _) = True
 isError (TKcommentEOFError) = True
 isError _ = False
 
--- Function that given a list of tokens, returns a list of strings that
--- represent each token, with the format given in the project specifications
-strTokens :: [Token] -> [String]
-strTokens tks = strTokens' (-1,-1) tks
-    where strTokens' _ []                    = []
-          strTokens' (-1,-1) (x:xs)          = getTokWithSpaces' x  ++ strTokens' (tokenPos x) xs
-          strTokens' (prevTokLine,prevTokCol) (x:xs)
-              | isTKendLine x                = [show x] ++ strTokens' (tokenPos x) xs 
-              | prevTokLine == getLine' x    = [show x] ++ strTokens' (tokenPos x) xs
-              | otherwise                    = getTokWithSpaces' x  ++ strTokens' (tokenPos x) xs
-
-          -- helpful functions
-          getLine' tok                = fst $ tokenPos tok 
-          getColumn' tok              = snd $ tokenPos tok  
-          getSpaces' x                = take x $ repeat " "
-          getTokWithSpaces' x         = (getSpaces' ( getColumn' x - 1 ) ) ++ [show x]
-          isTKendLine (TKendLine _)   = True
-          isTKendLine _               = False
 }

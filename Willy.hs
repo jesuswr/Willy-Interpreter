@@ -2,6 +2,8 @@ import System.IO
 import System.Directory
 import System.Environment
 import Lexer
+import Parser
+import AST
 
 --Main function
 main = do
@@ -33,5 +35,5 @@ wrongFormatInput = do putStrLn ( "Formato incorrecto: demasiados argumentos." )
 showResults :: String -> IO ()
 showResults str = case scanner str of
                     Left s -> putStr s
-                    Right toks -> do mapM_ putStr $ strTokens toks
+                    Right toks -> do print $ reverse $ parse toks
                                      return ()

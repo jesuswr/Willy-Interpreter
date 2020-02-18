@@ -1,0 +1,3 @@
+begin-world mimundo 
+Final goal is ( migoal or migoal2 and migoal3 );;;;
+end-world
