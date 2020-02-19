@@ -100,68 +100,129 @@ import qualified AST
     ';'                      { TKsemicolon _ }
 
 -- Precedence list
-%left not
-%left and or 
+%left and or  
+%nonassoc not
 
 -- TO DO
 
 %% -- Grammar
 
 BLOCK :: { [AST.BLOCK] }
-BLOCK      : BLOCK WORLD                              { $2:$1 }
-           | WORLD                                    { [$1] }
+BLOCK      : BLOCK WORLD                                { $2:$1 }
+           | BLOCK TASK                                 { $2:$1 }
+           | WORLD                                      { [$1] }
+           | TASK                                       { [$1] }
+
 
 WORLD :: { AST.BLOCK }
-WORLD      : beginWorld Id INSTRS endWorld            { AST.WORLD $1 $2 (reverse $3) }
-           | beginWorld Id endWorld                   { AST.WORLD $1 $2 [] }
+WORLD      : beginWorld Id INSTRS endWorld              { AST.WORLD (tokenPos $1) $2 (reverse $3) }
+           | beginWorld Id endWorld                     { AST.WORLD (tokenPos $1) $2 [] }
+           | beginWorld Id SEMICOLONS endWorld          { AST.WORLD (tokenPos $1) $2 [] }
 
 INSTRS :: { [AST.INSTR] }
-INSTRS     : INSTRS INSTR                             { $2:$1 }
-           | INSTRS ';'                               { $1 }
-           | INSTR                                    { [$1] }
+INSTRS     : INSTRS INSTR                               { $2:$1 }
+           | INSTRS ';'                                 { $1 }
+           | INSTR                                      { [$1] }
 
 INSTR :: { AST.INSTR }
-INSTR      : World Int Int ';'                        { AST.WORLDSIZE $1 $2 $3 }
-           | Wall DIRECTION from Int Int to Int Int ';'     { AST.WALL $1 $2 $4 $5 $7 $8  }        
-           | ObjectType Id of color COLORVAL ';'      { AST.OBJECTTYPE $1 $2 $5 }
-           | Place Int of Id at Int Int ';'           { AST.PLACEAT $1 $2 $4 $6 $7 }
-           | Place Int of Id in basket ';'            { AST.PLACEIN $1 $2 $4 }
-           | Start at Int Int heading DIRECTION ';'   { AST.STARTAT $1 $3 $4 $6 }
-           | Basket of capacity Int ';'               { AST.BASKET $1 $4 }
-           | Boolean Id with initial value true ';'   { AST.BOOLEAN $1 $2 $6 }
-           | Boolean Id with initial value false ';'  { AST.BOOLEAN $1 $2 $6 }
-           | Goal Id is GOALTEST ';'                  { AST.GOALIS $1 $2 $4 }
-           | Final goal is FINALGOAL ';'              { AST.FINALIS $1 $4 }
+INSTR      : World Int Int ';'                          { AST.WORLDSIZE (tokenPos $1) $2 $3 }
+           | Wall DIRECTION from Int Int to Int Int ';' { AST.WALL (tokenPos $1) $2 $4 $5 $7 $8  }        
+           | ObjectType Id of color COLORVAL ';'        { AST.OBJECTTYPE (tokenPos $1) $2 $5 }
+           | Place Int of Id at Int Int ';'             { AST.PLACEAT (tokenPos $1) $2 $4 $6 $7 }
+           | Place Int of Id in basket ';'              { AST.PLACEIN (tokenPos $1) $2 $4 }
+           | Start at Int Int heading DIRECTION ';'     { AST.STARTAT (tokenPos $1) $3 $4 $6 }
+           | Basket of capacity Int ';'                 { AST.BASKET (tokenPos $1) $4 }
+           | Boolean Id with initial value true ';'     { AST.BOOLEAN (tokenPos $1) $2 $6 }
+           | Boolean Id with initial value false ';'    { AST.BOOLEAN (tokenPos $1) $2 $6 }
+           | Goal Id is GOALTEST ';'                    { AST.GOALIS (tokenPos $1) $2 $4 }
+           | Final goal is FINALGOAL ';'                { AST.FINALIS (tokenPos $1) $4 }
 
 DIRECTION :: { Token }
-DIRECTION  : north                                    { $1 }
-           | east                                     { $1 }
-           | south                                     { $1 }
-           | west                                     { $1 }
+DIRECTION  : north                                      { $1 }
+           | east                                       { $1 }
+           | south                                      { $1 }
+           | west                                       { $1 }
 
 COLORVAL :: { Token }
-COLORVAL   : red                                      { $1 }
-           | blue                                     { $1 }
-           | mangenta                                 { $1 }
-           | cyan                                     { $1 }
-           | green                                    { $1 }
-           | yellow                                   { $1 }
+COLORVAL   : red                                        { $1 }
+           | blue                                       { $1 }
+           | mangenta                                   { $1 }
+           | cyan                                       { $1 }
+           | green                                      { $1 }
+           | yellow                                     { $1 }
 
 GOALTEST :: { AST.GOALTEST }
-GOALTEST   : willy is at Int Int                      { AST.WILLYISAT $1 $4 $5 }
-           | Int Id objects in Basket                 { AST.OBJECTSIN $1 $1 $2 }
-           | Int Id objects at Int Int                { AST.OBJECTSAT $1 $1 $2 $5 $6 }
+GOALTEST   : willy is at Int Int                        { AST.WILLYISAT (tokenPos $1) $4 $5 }
+           | Int Id objects in Basket                   { AST.OBJECTSIN (tokenPos $1) $1 $2 }
+           | Int Id objects at Int Int                  { AST.OBJECTSAT (tokenPos $1) $1 $2 $5 $6 }
 
 FINALGOAL :: { AST.FINALGOAL } 
-FINALGOAL  : FINALGOAL and FINALGOAL1                 { AST.FGAND $2 $1 $3 }
-           | FINALGOAL or FINALGOAL1                  { AST.FGOR $2 $1 $3 }
-           | FINALGOAL1                               { $1 }
+FINALGOAL  : FINALGOAL and FINALGOAL1                   { AST.FGAND (tokenPos $2) $1 $3 }
+           | FINALGOAL or FINALGOAL1                    { AST.FGOR (tokenPos $2) $1 $3 }
+           | FINALGOAL1                                 { $1 }
 
 FINALGOAL1 :: { AST.FINALGOAL } 
-FINALGOAL1 : not FINALGOAL                            { AST.FGNOT $1 $2 }
-           | '(' FINALGOAL ')'                        { $2 }
-           | Id                                       { AST.FGID $1 $1 }
+FINALGOAL1 : not FINALGOAL                              { AST.FGNOT (tokenPos $1) $2 }
+           | '(' FINALGOAL ')'                          { $2 }
+           | Id                                         { AST.FGID (tokenPos $1) $1 }
+           | true                                       { AST.FGTOF (tokenPos $1) $1 }
+           | false                                       { AST.FGTOF (tokenPos $1) $1 }
 
+
+
+TASK :: { AST.BLOCK }
+TASK       : beginTask Id on Id TASKINSTRS endTask      { AST.TASK (tokenPos $1) $2 $4 (reverse $5) }
+           | beginTask Id on Id endTask                 { AST.TASK (tokenPos $1) $2 $4 [] }
+           | beginTask Id on Id SEMICOLONS endTask      { AST.TASK (tokenPos $1) $2 $4 [] }
+
+TASKINSTRS :: { [AST.TASKINSTR] }
+TASKINSTRS : TASKINSTRS TASKINSTR                       { $2:$1 }
+           | TASKINSTRS ';'                             { $1 }
+           | TASKINSTR                                  { [$1] }
+
+TASKINSTR :: { AST.TASKINSTR }
+TASKINSTR : if BOOLTEST then TASKINSTR ';'                { AST.IF (tokenPos $1) $2 $4 }
+          | if BOOLTEST then TASKINSTR else TASKINSTR ';' { AST.IFELSE (tokenPos $1) $2 $4 $6 }
+          | repeat Int times TASKINSTR                  { AST.REPEAT (tokenPos $1) $2 $4 }
+          | while BOOLTEST do TASKINSTR                 { AST.WHILE (tokenPos $1) $2 $4 }
+          | begin TASKINSTRS end                        { AST.BEGIN (tokenPos $1) (reverse $2) }
+          | define Id as TASKINSTR                      { AST.DEFINE (tokenPos $1) $2 $4 }
+          | move ';'                                    { AST.MOVE (tokenPos $1) }
+          | turnLeft ';'                                { AST.TURNLEFT (tokenPos $1) }
+          | turnRight ';'                               { AST.TURNRIGHT (tokenPos $1) }
+          | pick Id ';'                                 { AST.PICK (tokenPos $1) $2 }
+          | drop Id ';'                                 { AST.DROP (tokenPos $1) $2 }
+          | set Id ';'                                  { AST.SET (tokenPos $1) $2 }
+          | set Id to true';'                           { AST.SETTO (tokenPos $1) $2 $4 }
+          | set Id to false';'                          { AST.SETTO (tokenPos $1) $2 $4 }
+          | clear Id ';'                                { AST.CLEAR (tokenPos $1) $2 }
+          | flip Id ';'                                 { AST.FLIP (tokenPos $1) $2 }
+          | terminate ';'                               { AST.TERMINATE (tokenPos $1) }
+          | Id ';'                                      { AST.INSTRID (tokenPos $1) $1 }
+
+BOOLTEST :: { AST.TEST }
+BOOLTEST  : BOOLTEST1                                   { $1 }
+          | BOOLTEST and BOOLTEST1                      { AST.TESTAND (tokenPos $2) $1 $3 }
+          | BOOLTEST or BOOLTEST1                       { AST.TESTOR (tokenPos $2) $1 $3 }
+    
+BOOLTEST1 :: { AST.TEST }
+BOOLTEST1 : not BOOLTEST                                { AST.TESTNOT (tokenPos $1) $2 }
+          | '(' BOOLTEST ')'                            { $2 }
+          | Id                                          { AST.TESTID (tokenPos $1) $1 }
+          | frontClear                                  { AST.FRONTCLEAR (tokenPos $1) }
+          | leftClear                                   { AST.LEFTCLEAR (tokenPos $1) }
+          | rightClear                                  { AST.RIGHTCLEAR (tokenPos $1) }
+          | lookingNorth                                { AST.LOOKNORTH (tokenPos $1) }
+          | lookingEast                                 { AST.LOOKEAST (tokenPos $1) }
+          | lookingSouth                                { AST.LOOKSOUTH (tokenPos $1) }
+          | lookingWest                                 { AST.LOOKWEST (tokenPos $1) }
+          | found '(' Id ')'                            { AST.FOUND (tokenPos $1) $3 }
+          | carrying '(' Id ')'                         { AST.CARRYING (tokenPos $1) $3 }
+          | true                                        { AST.TESTTOF (tokenPos $1) $1 }
+          | false                                       { AST.TESTTOF (tokenPos $1) $1 }
+
+SEMICOLONS: SEMICOLONS ';'                              { $1 }
+          | ';'                                         { [] }
 -- Program
 
 
