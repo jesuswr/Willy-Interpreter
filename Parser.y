@@ -117,7 +117,8 @@ BLOCK      : BLOCK WORLD                                { $2:$1 }
 WORLD :: { AST.BLOCK }
 WORLD      : beginWorld Id INSTRS endWorld              { AST.WORLD (tokenPos $1) $2 (reverse $3) }
            | beginWorld Id endWorld                     { AST.WORLD (tokenPos $1) $2 [] }
-           | beginWorld Id SEMICOLONS endWorld          { AST.WORLD (tokenPos $1) $2 [] }
+           | beginWorld Id SC endWorld                  { AST.WORLD (tokenPos $1) $2 [] }
+           | beginWorld Id SC INSTRS endWorld           { AST.WORLD (tokenPos $1) $2 (reverse $4) }
 
 INSTRS :: { [AST.INSTR] }
 INSTRS     : INSTRS INSTR                               { $2:$1 }
@@ -166,14 +167,16 @@ FINALGOAL1 : not FINALGOAL                              { AST.FGNOT (tokenPos $1
            | '(' FINALGOAL ')'                          { $2 }
            | Id                                         { AST.FGID (tokenPos $1) $1 }
            | true                                       { AST.FGTOF (tokenPos $1) $1 }
-           | false                                       { AST.FGTOF (tokenPos $1) $1 }
+           | false                                      { AST.FGTOF (tokenPos $1) $1 }
 
 
 
 TASK :: { AST.BLOCK }
 TASK       : beginTask Id on Id TASKINSTRS endTask      { AST.TASK (tokenPos $1) $2 $4 (reverse $5) }
            | beginTask Id on Id endTask                 { AST.TASK (tokenPos $1) $2 $4 [] }
-           | beginTask Id on Id SEMICOLONS endTask      { AST.TASK (tokenPos $1) $2 $4 [] }
+           | beginTask Id on Id SC endTask              { AST.TASK (tokenPos $1) $2 $4 [] }
+           | beginTask Id on Id SC TASKINSTRS endTask   { AST.TASK (tokenPos $1) $2 $4 (reverse $6) }
+
 
 TASKINSTRS :: { [AST.TASKINSTR] }
 TASKINSTRS : TASKINSTRS TASKINSTR                       { $2:$1 }
@@ -181,8 +184,8 @@ TASKINSTRS : TASKINSTRS TASKINSTR                       { $2:$1 }
            | TASKINSTR                                  { [$1] }
 
 TASKINSTR :: { AST.TASKINSTR }
-TASKINSTR : if BOOLTEST then TASKINSTR ';'                { AST.IF (tokenPos $1) $2 $4 }
-          | if BOOLTEST then TASKINSTR else TASKINSTR ';' { AST.IFELSE (tokenPos $1) $2 $4 $6 }
+TASKINSTR : if BOOLTEST then TASKINSTR ';'              { AST.IF (tokenPos $1) $2 $4 }
+          | if BOOLTEST then TASKINSTR else TASKINSTR';'{ AST.IFELSE (tokenPos $1) $2 $4 $6 }
           | repeat Int times TASKINSTR                  { AST.REPEAT (tokenPos $1) $2 $4 }
           | while BOOLTEST do TASKINSTR                 { AST.WHILE (tokenPos $1) $2 $4 }
           | begin TASKINSTRS end                        { AST.BEGIN (tokenPos $1) (reverse $2) }
@@ -221,7 +224,7 @@ BOOLTEST1 : not BOOLTEST                                { AST.TESTNOT (tokenPos 
           | true                                        { AST.TESTTOF (tokenPos $1) $1 }
           | false                                       { AST.TESTTOF (tokenPos $1) $1 }
 
-SEMICOLONS: SEMICOLONS ';'                              { $1 }
+SC: SC ';'                              { $1 }
           | ';'                                         { [] }
 -- Program
 
