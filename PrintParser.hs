@@ -6,14 +6,13 @@ import Lexer
 
 data PrintState = PrintState{ output :: [String] , blockN :: Int } deriving(Show)
 
-type MyPrintStateM a = StateT PrintState IO a
+type MyPrintStateM a = State PrintState a
 
 
-printParser :: [BLOCK] -> MyPrintStateM ()
+printParser :: [BLOCK] -> MyPrintStateM String
 printParser [] = do 
     (PrintState str int ) <- get
-    io $ putStr (unlines $ (taskStr:reverse str)) 
-    return ()
+    return (unlines $ (taskStr:reverse str)) 
     where
         taskStr = "TAREAS:"
 printParser (x:xs) = do
@@ -346,8 +345,7 @@ printGuard spaces (CARRYING _ id) = do
         io = replicate (spaces+6) ' ' ++ (getStr id)
 
 
-io :: IO a -> MyPrintStateM a
-io = liftIO
+
 
 
 traverseDefineInstrs :: [TASKINSTR] -> MyPrintStateM ()

@@ -38,5 +38,6 @@ showResults :: String -> IO ()
 showResults str = case scanner str of
                     Left s -> putStr s
                     Right toks -> do 
-                      runStateT (printParser (reverse $ parse toks)) (PrintState [] 0)
+                      let x = evalState (printParser (reverse $ parse toks)) (PrintState [] 0)
+                      putStrLn x
                       return()
