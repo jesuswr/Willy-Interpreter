@@ -2,7 +2,7 @@ module AST where
 import Lexer
 
 data BLOCK = WORLD{ worldStartPos :: (Int,Int) , worldID :: Token , worldInstrs :: [INSTR] } 
-           | TASK{ taskStartPos :: (Int,Int) , taskID :: Token , onWorld :: Token  
+           | TASK{ taskStartPos :: (Int,Int) , taskID :: Token , onW :: Token  
                   , taskInstrs :: [TASKINSTR] }
            deriving(Show)
 
