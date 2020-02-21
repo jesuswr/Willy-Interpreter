@@ -191,6 +191,9 @@ TASKINSTR : if BOOLTEST then TASKINSTR                  { AST.IF (tokenPos $1) $
           | repeat Int times TASKINSTR                  { AST.REPEAT (tokenPos $1) $2 $4 }
           | while BOOLTEST do TASKINSTR                 { AST.WHILE (tokenPos $1) $2 $4 }
           | begin TASKINSTRS end                        { AST.BEGIN (tokenPos $1) (reverse $2) }
+          | begin end                                   { AST.BEGIN (tokenPos $1) [] }
+          | begin SC end                                { AST.BEGIN (tokenPos $1) [] }
+          | begin SC TASKINSTRS end                     { AST.BEGIN (tokenPos $1) (reverse $3) }
           | define Id as TASKINSTR                      { AST.DEFINE (tokenPos $1) $2 $4 }
           | move ';'                                    { AST.MOVE (tokenPos $1) }
           | turnLeft ';'                                { AST.TURNLEFT (tokenPos $1) }
@@ -226,10 +229,8 @@ BOOLTEST1 : not BOOLTEST                                { AST.TESTNOT (tokenPos 
           | true                                        { AST.TESTTOF (tokenPos $1) $1 }
           | false                                       { AST.TESTTOF (tokenPos $1) $1 }
 
-SC: SC ';'                              { $1 }
+SC        : SC ';'                                      { $1 }
           | ';'                                         { [] }
--- Program
-
 
 
 {
