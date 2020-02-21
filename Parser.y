@@ -100,6 +100,8 @@ import qualified AST
     ';'                      { TKsemicolon _ }
 
 -- Precedence list
+%nonassoc then
+%nonassoc else
 %left and or  
 %nonassoc not
 
@@ -184,8 +186,8 @@ TASKINSTRS : TASKINSTRS TASKINSTR                       { $2:$1 }
            | TASKINSTR                                  { [$1] }
 
 TASKINSTR :: { AST.TASKINSTR }
-TASKINSTR : if BOOLTEST then TASKINSTR ';'              { AST.IF (tokenPos $1) $2 $4 }
-          | if BOOLTEST then TASKINSTR else TASKINSTR';'{ AST.IFELSE (tokenPos $1) $2 $4 $6 }
+TASKINSTR : if BOOLTEST then TASKINSTR                  { AST.IF (tokenPos $1) $2 $4 }
+          | if BOOLTEST then TASKINSTR else TASKINSTR   { AST.IFELSE (tokenPos $1) $2 $4 $6 }
           | repeat Int times TASKINSTR                  { AST.REPEAT (tokenPos $1) $2 $4 }
           | while BOOLTEST do TASKINSTR                 { AST.WHILE (tokenPos $1) $2 $4 }
           | begin TASKINSTRS end                        { AST.BEGIN (tokenPos $1) (reverse $2) }
