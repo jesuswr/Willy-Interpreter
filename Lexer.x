@@ -284,8 +284,8 @@ instance Show Token where
     show ( TKwest (l,c) )             = "TKwest(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
 
     show ( TKBoolean (l,c) )          = "TKBoolean(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKtrue (l,c) )             = "TKtrue(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
-    show ( TKfalse (l,c) )            = "TKfalse(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
+    show ( TKtrue (l,c) )             = "true"
+    show ( TKfalse (l,c) )            = "false"
     
     show ( TKInt (l,c) num )          = "TKInt(" ++ show num ++ ", linea=" ++ show l ++", columna=" ++ show c ++") " 
     show ( TKId (l,c) str )           = "TKId(\"" ++ str ++ "\", linea=" ++ show l ++", columna=" ++ show c ++") "

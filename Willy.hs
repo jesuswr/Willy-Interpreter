@@ -4,6 +4,8 @@ import System.Environment
 import Lexer
 import Parser
 import AST
+import PrintParser
+import Control.Monad.State
 
 --Main function
 main = do
@@ -35,5 +37,6 @@ wrongFormatInput = do putStrLn ( "Formato incorrecto: demasiados argumentos." )
 showResults :: String -> IO ()
 showResults str = case scanner str of
                     Left s -> putStr s
-                    Right toks -> do print $ reverse $ parse toks
-                                     return ()
+                    Right toks -> do 
+                      runStateT (printParser (reverse $ parse toks)) (PrintState [] 0)
+                      return()

@@ -2,4 +2,21 @@ begin-task mitask on mimundo
 
 
 
+
+
+end-task
+begin-world myworld
+end-world
+
+begin-task mitask2 on mimundo
+
+begin
+move;
+turn-left;
+turn-right;
+set id;
+terminate;
+set id to true;
+myInstruction;
+end
 end-task
