@@ -61,21 +61,23 @@ printInstrBlock spaces (x:xs) = do
 
 printInstr :: Int -> TASKINSTR -> MyPrintStateM ()
 printInstr spaces (IF _ test tInst) = do 
-    --incBlockN -- Que hago con el scope del if? uno mas? 
+    incBlockN -- IF have his own scope
     (PrintState str int) <- get
-    put (PrintState (cd:cond:str) int)
+    put (PrintState (cd:(bNum++show(int)):cond:str) int)
     printGuard (spaces+4) test
     (PrintState str' int') <- get
     put (PrintState (inst:str') int')
     printInstr (spaces+4) tInst
     where
         cond = replicate spaces ' ' ++ "CONDICIONAL IF:"
+        bNum = replicate (spaces+2) ' ' ++ "identificador de bloque: "
         cd   = replicate (spaces+2) ' ' ++ "condicion:"
         inst = replicate (spaces+2) ' ' ++ "instruccion:"
 
 printInstr spaces (IFELSE _ test tInst0 tInst1) = do
+    incBlockN -- IFELSE have his own scope
     (PrintState str int) <- get
-    put (PrintState (cd:cond:str) int)
+    put (PrintState (cd:(bNum++show(int)):cond:str) int)
     printGuard (spaces+4) test
     (PrintState str' int') <- get
     put (PrintState (inst:str') int')
@@ -85,36 +87,41 @@ printInstr spaces (IFELSE _ test tInst0 tInst1) = do
     printInstr (spaces+4) tInst1
     where
         cond  = replicate spaces ' ' ++ "CONDICIONAL IF/ELSE:"
+        bNum = replicate (spaces+2) ' ' ++ "identificador de bloque: "
         cd    = replicate (spaces+2) ' ' ++ "condicion:"
         inst  = replicate (spaces+2) ' ' ++ "instruccion if :"
         inst2 = replicate (spaces+2) ' ' ++ "instruccion else :"
 
 printInstr spaces (REPEAT _ n tInst) = do
+    incBlockN -- REPEAT have his own scope
     (PrintState str int) <- get
-    put (PrintState (it:nt:nv:cr:str) int)
+    put (PrintState (it:nt:nv:(bNum++show(int)):cr:str) int)
     printInstr (spaces+4) tInst
     where
         cr = replicate spaces ' ' ++ "CICLO REPEAT:"
+        bNum = replicate (spaces+2) ' ' ++ "identificador de bloque: "
         nv = replicate (spaces+2) ' ' ++ "numero de ciclos:"
         nt = replicate (spaces+4) ' ' ++ (show $ getValue n)
         it = replicate (spaces+2) ' ' ++ "instruccion:"
 
 printInstr spaces (WHILE _ test tInst) = do
+    incBlockN -- WHILE have his own scope
     (PrintState str int) <- get
-    put(PrintState (gc:cw:str) int)
+    put(PrintState (gc:(bNum++show(int)):cw:str) int)
     printGuard (spaces+4) test
     (PrintState str' int') <- get
     put(PrintState (it:str') int')
     printInstr (spaces+4) tInst
     where 
         cw = replicate spaces ' ' ++ "CICLO WHILE:"
+        bNum = replicate (spaces+2) ' ' ++ "identificador de bloque: "
         gc = replicate (spaces+2) ' ' ++ "condicion:"
         it = replicate (spaces+2) ' ' ++ "instruccion:"
 
-printInstr spaces (BEGIN _ []) = do
+printInstr spaces (BEGIN _ []) = do 
     (PrintState str int) <- get
     put(PrintState (is:(ib++(show (int+1))):bi:str) int)
-    incBlockN
+    incBlockN -- BEGIN have his own scope
     where
         bi = replicate spaces ' ' ++ "BLOQUE BEGIN: "
         ib = replicate (spaces+2) ' ' ++ "identificador de bloque: "
@@ -123,7 +130,7 @@ printInstr spaces (BEGIN _ []) = do
 printInstr spaces (BEGIN _ tInsts) = do
     (PrintState str int) <- get
     put(PrintState (is:(ib++(show (int+1))):bi:str) int)
-    incBlockN
+    incBlockN -- BEGIN have his own scope
     printInstrBlock (spaces+4) tInsts
     where
         bi = replicate spaces ' ' ++ "BLOQUE BEGIN: "
@@ -131,7 +138,7 @@ printInstr spaces (BEGIN _ tInsts) = do
         is = replicate (spaces+2) ' ' ++ "instrucciones:"
 
 printInstr _ (DEFINE _ _ tInst) = do
-    incBlockN  -- Se asume que un define te da un scope nuevo
+    incBlockN  -- DEFINE have his own scope
     traverseDefineInstr tInst
 
 printInstr spaces (MOVE _ ) = do
@@ -360,16 +367,20 @@ traverseDefineInstr (DEFINE _ _ tInst) = do
     traverseDefineInstr tInst
 
 traverseDefineInstr  (IF _ _ tInst) = do 
+    incBlockN
     traverseDefineInstr tInst
 
 traverseDefineInstr  (IFELSE _ _ tInst0 tInst1) = do
+    incBlockN
     traverseDefineInstr tInst0
     traverseDefineInstr tInst1
 
 traverseDefineInstr  (REPEAT _ _ tInst) = do
+    incBlockN
     traverseDefineInstr tInst
     
 traverseDefineInstr  (WHILE _ _ tInst) = do
+    incBlockN
     traverseDefineInstr tInst
 
 traverseDefineInstr _ = return ()
