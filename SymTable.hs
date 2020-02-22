@@ -186,7 +186,7 @@ updWorldSize id (c,r) = do
     Nothing -> return() --Este nunca pasa
     Just ((World p id dB nB h w b l _):xs) -> do
       let val = (World p id dB nB h w b l (c,r))
-      put(MySymState (Hash.insert id (val:xs) symT) ((nB+1):stck) err (nB+1))
+      put(MySymState (Hash.insert id (val:xs) symT) stck err nB)
       
 getWSize :: String -> SymTable -> (Int,Int)
 getWSize id symT = 
