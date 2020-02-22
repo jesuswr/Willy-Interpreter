@@ -222,8 +222,22 @@ insertWInst id (PLACEIN (l,c) n obj) = do
 
 insertWInst id (STARTAT (l,c) col row dir) = do
   (MySymState symT stck err nB ) <- get
+  case validStart id (col',row') symT of
+    1 -> put (MySymState symT stck (em1:err) nB)
+    2 -> put (MySymState symT stck (em2:err) nB)
+    3 -> put (MySymState symT stck (em3:err) nB)
+    0 -> updStartPos id (col',row') dir'
 
-
+  where
+    col' = getValue col
+    row' = getValue row
+    dir' = show dir
+    em1 = "Error: la columna o fila 0 no es valida, en la linea "
+          ++ show l ++ " y columna " ++ show c
+    em2 = "Error: la casilla se sale del mundo, en la linea "
+          ++ show l ++ " y columna " ++ show c     
+    em3 = "Error: hay una pared en la casilla donde se quiere poner a willy, en la linea "
+          ++ show l ++ " y columna " ++ show c  
 
 
 
@@ -392,7 +406,7 @@ cellWithoutWall x y worldId symT = case Hash.lookup worldId symT of
   _ -> False
 
 
-placeObject :: String -> String -> Int -> (Int,Int) -> MyStateM()
+placeObject :: String -> String -> Int -> Pos -> MyStateM()
 placeObject worldId objId n (c,r) = do
   (MySymState symT stck err nB ) <- get
   case Hash.lookup worldId symT of
@@ -440,5 +454,22 @@ insertObject wId oId n symT = do
     Just ((World pos id defB numB desc w baskS objInB siz willyDir):xs) -> do
       let newObjInB = (replicate n oId) ++ objInB
       let val = (World pos id defB numB desc w baskS newObjInB siz willyDir)
+      put(MySymState (Hash.insert wId (val:xs) symT) stck err nB)
+    Nothing -> return() -- Nunca pasa
+
+validStart :: String -> Pos -> SymTable -> Int
+validStart wId (col,row) symT 
+  | col*row == 0                           = 1 -- col o row es 0
+  | colLim < col || rowLim < row           = 2 -- La pos no esta en el mundo
+  | not $ cellWithoutWall col row wId symT = 3 -- Hay una pared
+  | otherwise                              = 0
+  where (colLim,rowLim) = getWSize wId symT
+
+updStartPos :: String -> Pos -> String -> MyStateM()
+updStartPos wId pos dir = do
+  (MySymState symT stck err nB ) <- get
+  case Hash.lookup wId symT of
+    Just ((World pos' id defB numB desc w baskS objInB siz willyDir):xs) -> do
+      let val = (World pos' id defB numB desc pos baskS objInB siz dir)
       put(MySymState (Hash.insert wId (val:xs) symT) stck err nB)
     Nothing -> return() -- Nunca pasa

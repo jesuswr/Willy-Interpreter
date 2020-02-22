@@ -1,33 +1,8 @@
 begin-world myWorld
 World 100 100;
 
-Object-type myObj of color red;
-Basket of capacity 6;
-Object-type myObj2 of color blue;
-
-
-
-Place 2 of myObj2 in basket;
-Place 3 of myObj in basket;
-Place 1 of myObj2 in basket;
-
-
-
-end-world
-
-
-begin-world myWorld2
-World 100 100;
-
-Object-type myObj of color red;
-Basket of capacity 6;
-Object-type myObj2 of color blue;
-
-
-
-Place 2 of myObj2 in basket;
-Place 3 of myObj in basket;
-Place 1 of myObj2 in basket;
+Start at 5 5 heading south;
+Wall north from 5 10 to 5 5;
 
 
 
