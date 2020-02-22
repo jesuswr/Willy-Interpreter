@@ -75,15 +75,16 @@ printInstr spaces (IF _ test tInst) = do
         inst = replicate (spaces+2) ' ' ++ "instruccion:"
 
 printInstr spaces (IFELSE _ test tInst0 tInst1) = do
-    incBlockN -- IFELSE have his own scope
     (PrintState str int) <- get
-    put (PrintState (cd:(bNum++show(int)):cond:str) int)
+    put (PrintState (cd:cond:str) int)
     printGuard (spaces+4) test
+    incBlockN -- IF have his own scope
     (PrintState str' int') <- get
-    put (PrintState (inst:str') int')
+    put (PrintState ((bNum++show(int')):inst:str') int')
     printInstr (spaces+4) tInst0
+    incBlockN -- ELSE have his own scope
     (PrintState str'' int'') <- get
-    put (PrintState (inst2:str'') int'')
+    put (PrintState ((bNum++show(int'')):inst2:str'') int'')
     printInstr (spaces+4) tInst1
     where
         cond  = replicate spaces ' ' ++ "CONDICIONAL IF/ELSE:"
