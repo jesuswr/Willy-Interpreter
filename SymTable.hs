@@ -178,15 +178,62 @@ insertWInst id (PLACEAT (l,c) n obj col row) = do
     em5   = "Error: no se puede colocar en fila o columna 0, en la linea "
             ++ show l ++ " y columna " ++ show c
 
+insertWInst id (BASKET (l,c) n) = do
+  (MySymState symT stck err nB ) <- get
+  case n' of
+    0         -> put(MySymState symT stck (em:err) nB) -- caso nuevo tamano igual a 0
+    otherwise ->
+      case Hash.lookup id symT of
+        Nothing -> return() --Este nunca pasa
+        Just ((World pos wId defB numB desc w baskS objInB siz willyDir):xs) -> 
+          case baskS of 
+            1         -> do -- Caso tamano viejo igual a 1, cambiar
+              let val = (World pos wId defB numB desc w n' objInB siz willyDir)
+              put(MySymState (Hash.insert id (val:xs) symT) stck err nB)
+            otherwise ->  -- Caso tamano viejo distinto de 1, error
+              put (MySymState symT stck (em1:err) nB)
+  where 
+    n'  = getValue n
+    em  = "Error: no se puede definir basket de capacidad 0, en la linea "
+          ++ show l ++ " y columna " ++ show c
+    em1 = "Error: no se puede definir la capacidad de basket mas de 1 vez, en la linea "
+          ++ show l ++ " y columna " ++ show c
+
+insertWInst id (PLACEIN (l,c) n obj) = do
+  (MySymState symT stck err nB ) <- get
+  case checkPlaceIn id objId n' symT stck of
+    1 -> put (MySymState symT stck (em1:err) nB)
+    2 -> put (MySymState symT stck (em2:err) nB)
+    3 -> put (MySymState symT stck (em3:err) nB)
+    4 -> put (MySymState symT stck (em4:err) nB)
+    0 -> insertObject id objId n' symT
+
+  where
+    n'    = getValue n
+    objId = getStr obj
+    em1 = "Error: no se puede colocar 0 objetos en basket, en la linea "
+          ++ show l ++ " y columna " ++ show c
+    em2 = "Error: el identificador no existe, en la linea "
+          ++ show l ++ " y columna " ++ show c     
+    em3 = "Error: el identificador no es de un objeto, en la linea "
+          ++ show l ++ " y columna " ++ show c              
+    em4 = "Error: no hay suficiente espacio en basket, en la linea "
+          ++ show l ++ " y columna " ++ show c   
+
+insertWInst id (STARTAT (l,c) col row dir) = do
+  (MySymState symT stck err nB ) <- get
 
 
-  
 
 
 
 
 
--- FUNCIONES GENERALES
+
+
+
+
+-- FUNCIONES GENERALES----------------------------
 
 existsWoTId :: SymTable -> String -> Bool
 existsWoTId sT id = 
@@ -338,9 +385,10 @@ isObjId' _ _                         = False
 
 cellWithoutWall :: Int -> Int -> String -> SymTable -> Bool
 cellWithoutWall x y worldId symT = case Hash.lookup worldId symT of
-  Just ((World _ _ _ _ h p _ _ _ _ ):xs) -> case Hash.lookup (x,y) h of
-    Just Wall -> False
-    _             -> True -- Si no es una pared ret true
+  Just ((World _ _ _ _ h p _ _ _ _ ):xs) -> 
+    case Hash.lookup (x,y) h of
+      Just Wall -> False
+      _         -> True -- Si no es una pared ret true
   _ -> False
 
 
@@ -369,3 +417,28 @@ placeObject worldId objId n (c,r) = do
           let v' = Hash.insert (c,r) (Objects v) desc 
           let val = World pos id defB numB v' w baskS objInB siz willyDir
           put(MySymState (Hash.insert worldId (val:xs) symT) stck err nB)
+
+checkPlaceIn :: String -> String -> Int -> SymTable -> [Int] -> Int
+checkPlaceIn worldId objId n symT scope
+  | n == 0                                     = 1
+  | not $ isUsedWId objId symT scope           = 2 -- El id no existe
+  | not $ isObjId   objId symT scope           = 3 -- El id no es de un objeto
+  | basketCap worldId symT < n                 = 4 -- No hay suf espacio en basket
+  | otherwise                                  = 0
+
+basketCap :: String -> SymTable -> Int
+basketCap wId symT =
+  case Hash.lookup wId symT of 
+    Just ((World pos id defB numB desc w baskS objInB siz willyDir):xs) -> 
+      baskS - (length objInB)
+    otherwise -> 0 -- Este nunca pasa
+
+insertObject :: String -> String -> Int -> SymTable -> MyStateM()
+insertObject wId oId n symT = do
+  (MySymState symT stck err nB ) <- get
+  case Hash.lookup wId symT of
+    Just ((World pos id defB numB desc w baskS objInB siz willyDir):xs) -> do
+      let newObjInB = (replicate n oId) ++ objInB
+      let val = (World pos id defB numB desc w baskS newObjInB siz willyDir)
+      put(MySymState (Hash.insert wId (val:xs) symT) stck err nB)
+    Nothing -> return() -- Nunca pasa
