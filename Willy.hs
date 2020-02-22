@@ -6,6 +6,9 @@ import Parser
 import AST
 import PrintParser
 import Control.Monad.State
+import SymTable
+import qualified Data.Map as Hash
+
 
 --Main function
 main = do
@@ -38,5 +41,8 @@ showResults :: String -> IO ()
 showResults str = case scanner str of
                     Left s -> putStr s
                     Right toks -> do 
-                      runStateT (printParser (reverse $ parse toks)) (PrintState [] 0)
+                      let tk = reverse $ parse toks
+                      let initTableState = MySymState Hash.empty [0] [] 0
+                      putStr $ evalState (printParser tk) (PrintState [] 0)
+                      runStateT (createSymTable tk)  initTableState
                       return()
