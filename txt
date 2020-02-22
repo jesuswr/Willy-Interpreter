@@ -1,17 +1,16 @@
 begin-world myWorld
+World 100 100;
 Object-type myObj of color red;
-Object-type myObj2 of color blue;
+Object-type myObj3 of color red;
 
-Object-type myWorld2 of color cyan;
+Object-type myObj2 of color red;
+
+Wall north from 2 8 to 2 2;
+Place 100 of myObj at 1 0;
 
 
-end-world
 
-begin-world myWorld
-Object-type myObj of color green;
-Object-type myObj2 of color yellow;
-Object-type myWorld of color red;
-Object-type myWorld2 of color red;
 
 
 end-world
+
