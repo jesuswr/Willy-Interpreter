@@ -1,9 +1,17 @@
 begin-world myWorld
+Object-type myObj of color red;
+Object-type myObj2 of color blue;
+
+Object-type myWorld2 of color cyan;
+
+
 end-world
 
 begin-world myWorld
-end-world
+Object-type myObj of color green;
+Object-type myObj2 of color yellow;
+Object-type myWorld of color red;
+Object-type myWorld2 of color red;
 
 
-begin-world myWorld
 end-world
