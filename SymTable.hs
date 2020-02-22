@@ -15,7 +15,7 @@ data SymValue = World{ startPos :: Pos , id :: String
                      , defBlock :: Int , numBlock :: Int  
                      , desc :: WorldDesc , willyIsAt :: Pos 
                      , basketSize :: Int , objectsInB :: [String]
-                     , size :: Pos
+                     , size :: Pos , willyDirection :: String
                      }
               | ObjectType{ startPos :: Pos , id :: String 
                           , defBlock :: Int , color :: String 
@@ -53,8 +53,8 @@ createSymTable [] = do
   io $ print stck
 
   return $ case err of
-    []  -> Left $ unlines $ reverse err
-    str -> Right symT
+    []   -> Right symT
+    str  -> Left $ unlines $ reverse err  
 createSymTable (x:xs) = do
   insertBlock x 
   createSymTable xs
@@ -104,7 +104,34 @@ insertWInst id (WORLDSIZE (l,c) cols rows)     = do
     em    = "Error: las filas y columnas no pueden ser 0 o negativo. En la linea "
              ++ show l ++ " y columna " ++ show c 
     em'   = "Error: no se puede definir el tamano del mundo 2 veces. En la linea "
-             ++ show l ++ " y columna " ++ show c 
+             ++ show l ++ " y columna " ++ show c
+
+insertWInst id (WALL (l,c) dir c1 r1 c2 r2) = do
+  (MySymState symT stck err nB ) <- get
+  case x1 * y1 * x2 * y2 of
+    0         -> do
+      put (MySymState symT stck (em:err) nB)
+    otherwise -> 
+      case checkWall x1 y1 x2 y2 direction id symT of
+        1 -> do put (MySymState symT stck (em1:err) nB)
+        2 -> do put (MySymState symT stck (em2:err) nB)
+        3 -> do put (MySymState symT stck (em3:err) nB)
+        0 -> do updWorldWall id x1 y1 x2 y2 direction
+  where
+    direction = show dir
+    x1 = getValue c1
+    y1 = getValue r1
+    x2 = getValue c2
+    y2 = getValue r2
+    em  = "Error: las filas y columnas no pueden ser 0 o negativo. En la linea "
+           ++ show l ++ " y columna " ++ show c
+    em1 = "Error: fila o columna fuera de los limites del mundo. En la linea "
+           ++ show l ++ " y columna " ++ show c
+    em2 = "Error: Wall: la direccion \"" ++ show dir ++ "\" no corresponde con las posiciones dadas."
+           ++ " En la linea " ++ show l ++ " y columna " ++ show c
+    em3 = "Error: no se pueden colocar paredes sobre una posicion donde hay objetos o esta willy. En la linea "
+           ++ show l ++ " y columna " ++ show c
+
 
 insertWInst id (OBJECTTYPE (l,c) oId color) = do
   (MySymState symT stck err nB ) <- get
@@ -148,15 +175,15 @@ existsWoTId sT id =
         True  -> True
         False -> existsWoTId' xs
 
-    isWorldOrTask (World _ _ _ _ _ _ _ _ _) = True
-    isWorldOrTask (Task _ _ _ _)            = True
-    isWorldOrTask _                         = False 
+    isWorldOrTask (World _ _ _ _ _ _ _ _ _ _) = True
+    isWorldOrTask (Task _ _ _ _)              = True
+    isWorldOrTask _                           = False 
 
 
 insertWorld :: (Int,Int) -> String -> MyStateM ()
 insertWorld p id = do
   (MySymState symT (st:sts) err nB ) <- get
-  let val      = World p id st (nB+1) Hash.empty (1,1) 1 [] (1,1)
+  let val      = World p id st (nB+1) Hash.empty (1,1) 1 [] (1,1) "north"
   insToTable id val
   pushScope
 
@@ -184,14 +211,14 @@ updWorldSize id (c,r) = do
   (MySymState symT stck err nB ) <- get
   case Hash.lookup id symT of
     Nothing -> return() --Este nunca pasa
-    Just ((World p id dB nB h w b l _):xs) -> do
-      let val = (World p id dB nB h w b l (c,r))
+    Just ((World p id dB nB h w b l _ d):xs) -> do
+      let val = (World p id dB nB h w b l (c,r) d)
       put(MySymState (Hash.insert id (val:xs) symT) stck err nB)
       
 getWSize :: String -> SymTable -> (Int,Int)
 getWSize id symT = 
   case Hash.lookup id symT of
-    Just ((World p id dB nB h w c l size):xs) -> size
+    Just ((World p id dB nB h w c l size _):xs) -> size
 
 isUsedWId :: String -> SymTable -> [Int] -> Bool
 isUsedWId objId symT []     = False
@@ -209,3 +236,47 @@ objIdBelongs _ []                        = False
 objIdBelongs y ((ObjectType _ _ x _):xs) = y == x
 objIdBelongs y ((WBoolean _ _ x _):xs)   = y == x
 objIdBelongs _ _                         = False
+
+checkWall :: Int -> Int -> Int -> Int -> String -> String -> SymTable -> Int
+checkWall x1 y1 x2 y2 dir worldId symT
+  | x1 > xlim || x2 > xlim                          = 1
+  | y1 > ylim || y2 > ylim                          = 1
+  | dir == "north" && (x1 /= x2 || y2 > y1)         = 2
+  | dir == "south" && (x1 /= x2 || y2 < y1)         = 2
+  | dir == "east"  && (x1 > x2 || y2 /= y1)         = 2
+  | dir == "west"  && (x1 < x2 || y2 /= y1)         = 2
+  | not $ clearForWall x1 y1 x2 y2 dir worldId symT = 3
+  | otherwise                                       = 0
+  where (xlim,ylim) = getWSize worldId symT
+
+
+clearForWall :: Int -> Int -> Int -> Int -> String -> String -> SymTable -> Bool
+clearForWall x y finalx finaly dir worldId symT
+  | not $ emptyCell x y worldId symT = False
+  | x == finalx && y == finaly       = True
+  | dir == "north"         = clearForWall x (y-1) finalx finaly dir worldId symT
+  | dir == "south"         = clearForWall x (y+1) finalx finaly dir worldId symT
+  | dir == "east"          = clearForWall (x+1) y finalx finaly dir worldId symT
+  | dir == "west"          = clearForWall (x-1) y finalx finaly dir worldId symT
+
+emptyCell :: Int -> Int -> String -> SymTable -> Bool
+emptyCell x y worldId symT = case Hash.lookup worldId symT of
+  Just ((World _ _ _ _ h p _ _ _ _ ):xs) -> case Hash.lookup (x,y) h of
+    Just (Object s) -> False
+    _          -> (x,y) /= p -- Si no es un objeto y no es willy ret true
+  _ -> False
+
+updWorldWall :: String -> Int -> Int -> Int -> Int -> String -> MyStateM ()
+updWorldWall worldId x1 y1 x2 y2 dir = do
+  (MySymState symT stck err nB ) <- get
+  case Hash.lookup worldId symT of
+    Just ((World p id dB nB h w b l po d):xs) -> do
+      let val = (World p id dB nB (Hash.insert (x1,y1) (Wall) h) w b l po d)
+      put (MySymState (Hash.insert worldId (val:xs) symT) stck err nB)
+      if (x1==x2 && y1==y2) then do return ()
+      else if (dir == "north") then updWorldWall worldId x1 (y1-1) x2 y2 dir
+      else if (dir == "south") then updWorldWall worldId x1 (y1+1) x2 y2 dir
+      else if (dir == "east" ) then updWorldWall worldId (x1+1) y1 x2 y2 dir
+      else                          updWorldWall worldId (x1-1) y1 x2 y2 dir
+    _                                        -> return ()
+
