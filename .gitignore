@@ -1,0 +1,9 @@
+*.o
+*.txt
+*.info
+*.hi
+Willy
+prueba*
+Lexer.hs
+Parser.hs
+a.out
