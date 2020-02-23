@@ -137,7 +137,7 @@ insertWInst id (WALL (l,c) dir c1 r1 c2 r2) = do
 
 insertWInst id (OBJECTTYPE (l,c) oId color) = do
   (MySymState symT stck err nB ) <- get
-  case (isUsedWId oId' symT stck) || (id==oId') of
+  case not $ notExistId oId' symT stck of
     True      -> put(MySymState symT stck (em:err) nB)
     otherwise -> do
       let val = ObjectType (l,c) oId' nB (show color)

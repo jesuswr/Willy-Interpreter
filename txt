@@ -1,9 +1,10 @@
-begin-world myWorld
-World 100 100;
+begin-world miobj
 
-Start at 5 5 heading south;
-Wall north from 5 10 to 5 5;
+Object-type miobj of color blue;
 
+Boolean mibool with initial value false;
+
+Goal migoal is 5 miobj objects in Basket;
 
 
 end-world
