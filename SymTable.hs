@@ -65,7 +65,7 @@ createSymTable (x:xs) = do
 insertBlock :: BLOCK -> MyStateM ()
 insertBlock (WORLD (l,c) (TKId p s) instrs) = do
   (MySymState symT stck err nB ) <- get
-  case existsWoTId symT s of
+  case existId s symT [0] (isToW) of
     True -> do -- Si existe
       put(MySymState symT stck (em:err) nB)
       insertBlock (WORLD (l,c) (TKId p $ (show $ length err) ++ s) instrs)  
@@ -78,6 +78,7 @@ insertBlock (WORLD (l,c) (TKId p s) instrs) = do
     where
       em    = "Error: redefinicion de " ++ s ++ " en la linea "
               ++ show l ++ " y columna " ++ show c
+      isToW x = isTask x || isWorld x
 -- FALTA HACER LO DE ARRIBA PARA TASK, PERO PRIMERO TODO EL WORLD
 
 
@@ -158,6 +159,7 @@ insertWInst id (PLACEAT (l,c) n obj col row) = do
                    3 -> put(MySymState symT stck (em3:err) nB)
                    4 -> put(MySymState symT stck (em4:err) nB)
                    5 -> put(MySymState symT stck (em5:err) nB)
+                   6 -> put(MySymState symT stck (em6:err) nB)
                    0 -> do
                     placeObject id objId n' (col',row')
   where
@@ -169,13 +171,15 @@ insertWInst id (PLACEAT (l,c) n obj col row) = do
             ++ show l ++ " y columna " ++ show c
     em1   = "Error: el identificador no existe, en la linea "
             ++ show l ++ " y columna " ++ show c
-    em2   = "Error: el identificador no es de objeto, en la linea "
+    em2   = "Error: identificador fuera de alcance, en la linea "
             ++ show l ++ " y columna " ++ show c
-    em3   = "Error: la casilla se sale del mundo, en la linea "
+    em3   = "Error: el identificador no es de objeto, en la linea "
             ++ show l ++ " y columna " ++ show c
-    em4   = "Error: hay una pared en donde se esta intentando colocar el objeto, en la linea "
+    em4   = "Error: la casilla se sale del mundo, en la linea "
             ++ show l ++ " y columna " ++ show c
-    em5   = "Error: no se puede colocar en fila o columna 0, en la linea "
+    em5   = "Error: hay una pared en donde se esta intentando colocar el objeto, en la linea "
+            ++ show l ++ " y columna " ++ show c
+    em6   = "Error: no se puede colocar en fila o columna 0, en la linea "
             ++ show l ++ " y columna " ++ show c
 
 insertWInst id (BASKET (l,c) n) = do
@@ -207,6 +211,7 @@ insertWInst id (PLACEIN (l,c) n obj) = do
     2 -> put (MySymState symT stck (em2:err) nB)
     3 -> put (MySymState symT stck (em3:err) nB)
     4 -> put (MySymState symT stck (em4:err) nB)
+    5 -> put (MySymState symT stck (em5:err) nB)
     0 -> insertObject id objId n' symT
 
   where
@@ -215,10 +220,12 @@ insertWInst id (PLACEIN (l,c) n obj) = do
     em1 = "Error: no se puede colocar 0 objetos en basket, en la linea "
           ++ show l ++ " y columna " ++ show c
     em2 = "Error: el identificador no existe, en la linea "
+          ++ show l ++ " y columna " ++ show c
+    em3 = "Error: identificador fuera de alcance, en la linea "
           ++ show l ++ " y columna " ++ show c     
-    em3 = "Error: el identificador no es de un objeto, en la linea "
+    em4 = "Error: el identificador no es de un objeto, en la linea "
           ++ show l ++ " y columna " ++ show c              
-    em4 = "Error: no hay suficiente espacio en basket, en la linea "
+    em5 = "Error: no hay suficiente espacio en basket, en la linea "
           ++ show l ++ " y columna " ++ show c   
 
 insertWInst id (STARTAT (l,c) col row dir) = do
@@ -318,24 +325,6 @@ validFinalGoal (FGID (l,c) id) = do
 
 -- FUNCIONES GENERALES----------------------------
 
-existsWoTId :: SymTable -> String -> Bool
-existsWoTId sT id = 
-  case Hash.lookup id sT of
-    Nothing   -> False
-    Just xs   -> existsWoTId' xs 
-
-  where
-    existsWoTId' []     = False
-    existsWoTId' (x:xs) = 
-      case isWorldOrTask x of
-        True  -> True
-        False -> existsWoTId' xs
-
-    isWorldOrTask (World _ _ _ _ _ _ _ _ _ _) = True
-    isWorldOrTask (Task _ _ _ _)              = True
-    isWorldOrTask _                           = False 
-
-
 insertWorld :: Pos -> String -> MyStateM ()
 insertWorld p id = do
   (MySymState symT (st:sts) err nB ) <- get
@@ -379,23 +368,6 @@ getWSize id symT =
       size $ filter isWorld listVal !! 0
     _ -> (1,1)
 
-isUsedWId :: String -> SymTable -> [Int] -> Bool
-isUsedWId objId symT []     = False
-isUsedWId objId symT (x:[]) = False 
-isUsedWId objId symT (x:xs) = 
-  case Hash.lookup objId symT of
-    Nothing -> isUsedWId objId symT xs
-    Just ys -> 
-      case objIdBelongs x ys of
-        False -> isUsedWId objId symT xs
-        True  -> True 
-
-objIdBelongs :: Int -> [SymValue] -> Bool
-objIdBelongs _ []                        = False
-objIdBelongs y ((ObjectType _ _ x _):xs) = y == x
-objIdBelongs y ((WBoolean _ _ x _):xs)   = y == x
-objIdBelongs y ((Goal _ _ x _):xs)       = y == x
-objIdBelongs _ _                         = False
 
 checkWall :: Int -> Int -> Int -> Int -> String -> String -> SymTable -> Int
 checkWall x1 y1 x2 y2 dir worldId symT
@@ -421,9 +393,11 @@ clearForWall x y finalx finaly dir worldId symT
 
 emptyCell :: Int -> Int -> String -> SymTable -> Bool
 emptyCell x y worldId symT = case Hash.lookup worldId symT of
-  Just ((World _ _ _ _ h p _ _ _ _ ):xs) -> case Hash.lookup (x,y) h of
-    Just (Objects _) -> False
-    _          -> (x,y) /= p -- Si no es un objeto y no es willy ret true
+  Just listVal ->  do
+    let world = filter isWorld listVal !! 0
+    case Hash.lookup (x,y) $ desc world of
+      Just (Objects _)     -> False
+      _ -> (x,y) /= willyIsAt world -- Si no es un objeto y no es willy ret true
   _ -> False
 
 updWorldWall :: String -> Int -> Int -> Int -> Int -> String -> MyStateM ()
@@ -444,36 +418,24 @@ updWorldWall worldId x1 y1 x2 y2 dir = do
 
 checkPlaceAt :: String -> String -> Pos -> SymTable -> [Int] -> Int
 checkPlaceAt worldId objId (col,row) symT scope
-  | not $ isUsedWId objId symT scope           = 1 -- El id no existe
-  | not $ isObjId   objId symT scope           = 2 -- El id no es de un objeto
-  | colLim < col || rowLim < row               = 3 -- La casilla no entra en el mundo
-  | not $ cellWithoutWall col row worldId symT = 4 -- La casilla esta ocupada por pared
-  | col*row == 0                               = 5 -- no se puede colocar en 0
+  | notExists                                  = 1 -- El id no existe
+  | not $ existId objId symT scope isTrue      = 2 -- Fuera de alcance
+  | not $ existId objId symT scope isObject    = 3 -- El id no es de un objeto
+  | colLim < col || rowLim < row               = 4 -- La casilla no entra en el mundo
+  | not $ cellWithoutWall col row worldId symT = 5 -- La casilla esta ocupada por pared
+  | col*row == 0                               = 6 -- no se puede colocar en 0
   | otherwise                                  = 0 -- No hay problema
   where (colLim,rowLim) = getWSize worldId symT
+        notExists = case Hash.lookup objId symT of
+          Nothing -> True
+          _       -> False
 
-  
-
-isObjId :: String -> SymTable -> [Int] -> Bool
-isObjId objId symT []     = False
-isObjId objId symT (x:[]) = False 
-isObjId objId symT (x:xs) = 
-  case Hash.lookup objId symT of
-    Nothing -> isObjId objId symT xs
-    Just ys -> 
-      case isObjId' x ys of
-        False -> isObjId objId symT xs
-        True  -> True 
-
-isObjId' :: Int -> [SymValue] -> Bool
-isObjId' _ []                        = False
-isObjId' y ((ObjectType _ _ x _):xs) = y == x
-isObjId' _ _                         = False
 
 cellWithoutWall :: Int -> Int -> String -> SymTable -> Bool
 cellWithoutWall x y worldId symT = case Hash.lookup worldId symT of
-  Just ((World _ _ _ _ h p _ _ _ _ ):xs) -> 
-    case Hash.lookup (x,y) h of
+  Just listVal -> do
+    let world = filter isWorld listVal !! 0
+    case Hash.lookup (x,y) $ desc world of
       Just Wall -> False
       _         -> True -- Si no es una pared ret true
   _ -> False
@@ -483,51 +445,58 @@ placeObject :: String -> String -> Int -> Pos -> MyStateM()
 placeObject worldId objId n (c,r) = do
   (MySymState symT stck err nB ) <- get
   case Hash.lookup worldId symT of
-    Just ((World pos id defB numB desc w baskS objInB siz willyDir):xs) -> 
-      case Hash.lookup (c,r) desc of
+    Just listVal -> do
+      let world = filter isWorld listVal !! 0
+      case Hash.lookup (c,r) $ desc world of
         Just (Objects map) -> 
           case Hash.lookup objId map of
             Just m -> do 
               io $ print "hola1"
               let v  = Hash.insert objId (m+n) map
-              let v' = Hash.insert (c,r) (Objects v) desc 
-              let val = World pos id defB numB v' w baskS objInB siz willyDir
-              put(MySymState (Hash.insert worldId (val:xs) symT) stck err nB)
+              let v' = Hash.insert (c,r) (Objects v) $ desc world
+              let newWorld = world{desc=v'}
+              put(MySymState (Hash.insert worldId (updateWListVal newWorld listVal) symT) stck err nB)
             Nothing -> do
               io $ print "hola2"
               let v  = Hash.insert objId n map
-              let v' = Hash.insert (c,r) (Objects v) desc 
-              let val = World pos id defB numB v' w baskS objInB siz willyDir
-              put(MySymState (Hash.insert worldId (val:xs) symT) stck err nB)
+              let v' = Hash.insert (c,r) (Objects v) $ desc world 
+              let newWorld = world{desc=v'}
+              put(MySymState (Hash.insert worldId (updateWListVal newWorld listVal) symT) stck err nB)
         Nothing -> do
           let v  = Hash.insert objId n Hash.empty
-          let v' = Hash.insert (c,r) (Objects v) desc 
-          let val = World pos id defB numB v' w baskS objInB siz willyDir
-          put(MySymState (Hash.insert worldId (val:xs) symT) stck err nB)
+          let v' = Hash.insert (c,r) (Objects v) $ desc world 
+          let newWorld = world{desc=v'}
+          put(MySymState (Hash.insert worldId (updateWListVal newWorld listVal) symT) stck err nB)
 
 checkPlaceIn :: String -> String -> Int -> SymTable -> [Int] -> Int
 checkPlaceIn worldId objId n symT scope
   | n == 0                                     = 1
-  | not $ isUsedWId objId symT scope           = 2 -- El id no existe
-  | not $ isObjId   objId symT scope           = 3 -- El id no es de un objeto
-  | basketCap worldId symT < n                 = 4 -- No hay suf espacio en basket
+  | notExists                                  = 2 -- El id no existe
+  | not $ existId objId symT scope isTrue      = 3 -- Fuera de alcance
+  | not $ existId objId symT scope isObject    = 3 -- El id no es de un objeto
+  | basketCap worldId symT < n                 = 5 -- No hay suf espacio en basket
   | otherwise                                  = 0
+  where notExists = case Hash.lookup objId symT of
+          Nothing -> True
+          _       -> False
 
 basketCap :: String -> SymTable -> Int
 basketCap wId symT =
   case Hash.lookup wId symT of 
-    Just ((World pos id defB numB desc w baskS objInB siz willyDir):xs) -> 
-      baskS - (length objInB)
+    Just listVal -> do
+      let world = filter isWorld listVal !! 0
+      basketSize world - (length $ objectsInB world)
     otherwise -> 0 -- Este nunca pasa
 
 insertObject :: String -> String -> Int -> SymTable -> MyStateM()
 insertObject wId oId n symT = do
   (MySymState symT stck err nB ) <- get
   case Hash.lookup wId symT of
-    Just ((World pos id defB numB desc w baskS objInB siz willyDir):xs) -> do
-      let newObjInB = (replicate n oId) ++ objInB
-      let val = (World pos id defB numB desc w baskS newObjInB siz willyDir)
-      put(MySymState (Hash.insert wId (val:xs) symT) stck err nB)
+    Just listVal -> do
+      let oldWorld = filter isWorld listVal !! 0
+      let newObjInB = (replicate n oId) ++ (objectsInB oldWorld)
+      let newWorld = oldWorld{objectsInB=newObjInB}
+      put(MySymState (Hash.insert wId (updateWListVal newWorld listVal) symT) stck err nB)
     Nothing -> return() -- Nunca pasa
 
 validStart :: String -> Pos -> SymTable -> Int
@@ -641,6 +610,9 @@ isInstruction _             = False
 isTask :: SymValue -> Bool
 isTask Task{} = True
 isTask _      = False
+
+isTrue :: SymValue -> Bool
+isTrue _ = True
 
 {- getOldWorld = filter isWorld listVal !! 0 -}
 updateWListVal :: SymValue -> [SymValue] -> [SymValue]
