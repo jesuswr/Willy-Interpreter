@@ -590,7 +590,7 @@ existId id symT (scope:scopes) isX =
 scopeBelongs :: Int -> [SymValue] -> Bool  -- Recorro la lista checkeando
 scopeBelongs scope [] = False
 scopeBelongs scope (val:vals)
-  | defBlock val == scope = True     -- los Symvalue que busques con isX deben tener atributo defB
+  | defBlock val == scope = True     -- los SymValue que busques con isX deben tener atributo defB
   | otherwise             = scopeBelongs scope vals
 
 
@@ -635,3 +635,9 @@ isInstruction _             = False
 isTask :: SymValue -> Bool
 isTask Task{} = True
 isTask _      = False
+
+{- getOldWorld = filter isWorld listVal !! 0 -}
+updateWListVal :: SymValue -> [SymValue] -> [SymValue]
+updateWListVal newWorld (val:vals)
+  | isWorld val = newWorld:vals
+  | otherise    = val:updateWListVal newWorld vals
