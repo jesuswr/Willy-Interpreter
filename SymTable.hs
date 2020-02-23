@@ -184,12 +184,13 @@ insertWInst id (BASKET (l,c) n) = do
     0         -> put(MySymState symT stck (em:err) nB) -- caso nuevo tamano igual a 0
     otherwise ->
       case Hash.lookup id symT of
-        Nothing -> return() --Este nunca pasa
-        Just ((World pos wId defB numB desc w baskS objInB siz willyDir):xs) -> 
-          case baskS of 
+        Nothing      -> return() --Este nunca pasa
+        Just listVal -> do
+          let world = filter isWorld listVal !! 0
+          case basketSize world of 
             1         -> do -- Caso tamano viejo igual a 1, cambiar
-              let val = (World pos wId defB numB desc w n' objInB siz willyDir)
-              put(MySymState (Hash.insert id (val:xs) symT) stck err nB)
+              let newWorld = world{basketSize = n'}
+              put(MySymState (Hash.insert id (updateWListVal newWorld listVal) symT) stck err nB)
             otherwise ->  -- Caso tamano viejo distinto de 1, error
               put (MySymState symT stck (em1:err) nB)
   where 
@@ -366,14 +367,17 @@ updWorldSize id (c,r) = do
   (MySymState symT stck err nB ) <- get
   case Hash.lookup id symT of
     Nothing -> return() --Este nunca pasa
-    Just ((World p id dB nB h w b l _ d):xs) -> do
-      let val = (World p id dB nB h w b l (c,r) d)
-      put(MySymState (Hash.insert id (val:xs) symT) stck err nB)
+    Just listVal -> do
+      let oldWorld = filter isWorld listVal !! 0 -- solo hay un world para un id dado
+      let newWorld = oldWorld{size=(c,r)} -- (c,r) nuevo wsize
+      put(MySymState (Hash.insert id (updateWListVal newWorld listVal) symT) stck err nB)
       
 getWSize :: String -> SymTable -> Pos
 getWSize id symT = 
   case Hash.lookup id symT of
-    Just ((World p id dB nB h w c l size _):xs) -> size
+    Just listVal -> 
+      size $ filter isWorld listVal !! 0
+    _ -> (1,1)
 
 isUsedWId :: String -> SymTable -> [Int] -> Bool
 isUsedWId objId symT []     = False
@@ -426,9 +430,10 @@ updWorldWall :: String -> Int -> Int -> Int -> Int -> String -> MyStateM ()
 updWorldWall worldId x1 y1 x2 y2 dir = do
   (MySymState symT stck err nB ) <- get
   case Hash.lookup worldId symT of
-    Just ((World p id dB nB h w b l po d):xs) -> do
-      let val = (World p id dB nB (Hash.insert (x1,y1) (Wall) h) w b l po d)
-      put (MySymState (Hash.insert worldId (val:xs) symT) stck err nB)
+    Just listVal -> do
+      let oldWorld = filter isWorld listVal !! 0
+      let newWorld =  oldWorld{desc=(Hash.insert (x1,y1) (Wall) $ desc oldWorld)} -- (x1,y1) ahora es (Wall)
+      put (MySymState (Hash.insert worldId (updateWListVal newWorld listVal) symT) stck err nB)
       if (x1==x2 && y1==y2) then do return ()
       else if (dir == "north") then updWorldWall worldId x1 (y1-1) x2 y2 dir
       else if (dir == "south") then updWorldWall worldId x1 (y1+1) x2 y2 dir
@@ -537,9 +542,10 @@ updStartPos :: String -> Pos -> String -> MyStateM()
 updStartPos wId pos dir = do
   (MySymState symT stck err nB ) <- get
   case Hash.lookup wId symT of
-    Just ((World pos' id defB numB desc w baskS objInB siz willyDir):xs) -> do
-      let val = (World pos' id defB numB desc pos baskS objInB siz dir)
-      put(MySymState (Hash.insert wId (val:xs) symT) stck err nB)
+    Just listVal -> do
+      let oldWorld = filter isWorld listVal !! 0
+      let newWorld = oldWorld{willyIsAt = pos, willyDirection = dir}
+      put(MySymState (Hash.insert wId (updateWListVal newWorld listVal) symT) stck err nB)
     Nothing -> return() -- Nunca pasa
 
 
@@ -640,4 +646,4 @@ isTask _      = False
 updateWListVal :: SymValue -> [SymValue] -> [SymValue]
 updateWListVal newWorld (val:vals)
   | isWorld val = newWorld:vals
-  | otherise    = val:updateWListVal newWorld vals
+  | otherwise    = val:updateWListVal newWorld vals
