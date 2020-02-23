@@ -29,10 +29,11 @@ data SymValue = World{ startPos :: Pos , id :: String
                     , defBlock :: Int , test :: GOALTEST 
                     }
               | Instruction{ startPos :: Pos , id :: String 
-                           , defBlock :: Int , inst :: TASKINSTR
+                           , defBlock :: Int , numBlock :: Int , inst :: TASKINSTR
                            }
               | Task{ startPos :: Pos , id :: String 
-                    , defBlock :: Int , onWorld :: String }
+                    , defBlock :: Int , numBlock :: Int, onWorld :: String 
+                    }
               deriving(Show)
 
 type SymTable = Hash.Map String [SymValue]
@@ -69,7 +70,6 @@ insertBlock (WORLD (l,c) (TKId p s) instrs) = do
     True -> do -- Si existe
       put(MySymState symT stck (em:err) nB)
       insertBlock (WORLD (l,c) (TKId p $ (show $ length err) ++ s) instrs)  
-      io $ print $ length err
     False -> do -- No existe
       insertWorld (l,c) s
       insertWIBlock s instrs
@@ -80,6 +80,48 @@ insertBlock (WORLD (l,c) (TKId p s) instrs) = do
               ++ show l ++ " y columna " ++ show c
       isToW x = isTask x || isWorld x
 -- FALTA HACER LO DE ARRIBA PARA TASK, PERO PRIMERO TODO EL WORLD
+insertBlock (TASK (l,c) (TKId tP tId) (TKId wP wId) tasks) = do
+  (MySymState symT stck err nB ) <- get
+  case existId tId symT [0] (isToW) of
+    True  -> do -- si existe
+      put(MySymState symT stck (em1:err) nB)
+      insertBlock (TASK (l,c) (TKId tP $ (show $ length err) ++ tId) (TKId wP wId) tasks)  
+    False ->
+      case existId wId symT [0] isWorld of
+        False -> do
+          put(MySymState symT (-1:stck) (em2:err) nB)
+          pushScope
+          (MySymState symT stck err nB ) <- get
+          let val = Task (l,c) tId 0 nB wId 
+          insToTable tId val
+          insertTIBlock tasks
+          popScope
+          popScope
+        True  -> do
+          let wSc = getWorldScope wId symT
+          put(MySymState symT (wSc:stck) err nB)
+          pushScope
+          (MySymState symT stck err nB ) <- get
+          let val = Task (l,c) tId 0 nB wId 
+          insToTable tId val
+          insertTIBlock tasks
+          popScope
+          popScope
+
+  where
+      em1    = "Error: redefinicion de " ++ tId ++ " en la linea "
+              ++ show l ++ " y columna " ++ show c
+      em2    = "Error: el mundo dado no existe, en la linea "
+              ++ show l ++ " y columna " ++ show c
+      isToW x = isTask x || isWorld x
+
+
+insertTIBlock :: [TASKINSTR] -> MyStateM()
+insertTIBlock []     = return()
+insertTIBlock (x:xs) = do
+  insertTInst x 
+  insertTIBlock xs
+
 
 
 insertWIBlock :: String -> [INSTR] -> MyStateM ()
@@ -232,7 +274,7 @@ insertWInst id (STARTAT (l,c) col row dir) = do
   (MySymState symT stck err nB ) <- get
   case validStart id (col',row') symT of
     1 -> put (MySymState symT stck (em1:err) nB)
-    2 -> put (MySymState symT stck (em1:err) nB)
+    2 -> put (MySymState symT stck (em2:err) nB)
     3 -> put (MySymState symT stck (em3:err) nB)
     0 -> updStartPos id (col',row') dir'
 
@@ -281,7 +323,7 @@ insertWInst id (GOALIS (l,c) gId gTest) = do
 
 insertWInst id (BOOLEAN (l,c) boolId boolValue) = do
   (MySymState symT stck err nB ) <- get
-  case not (notExistId boolId' symT stck) || (id==boolId') of
+  case not $ notExistId boolId' symT stck of
     True      -> put(MySymState symT stck (em:err) nB)
     otherwise -> do
       let val = WBoolean (l,c) boolId' nB (getBool boolValue)
@@ -451,13 +493,11 @@ placeObject worldId objId n (c,r) = do
         Just (Objects map) -> 
           case Hash.lookup objId map of
             Just m -> do 
-              io $ print "hola1"
               let v  = Hash.insert objId (m+n) map
               let v' = Hash.insert (c,r) (Objects v) $ desc world
               let newWorld = world{desc=v'}
               put(MySymState (Hash.insert worldId (updateWListVal newWorld listVal) symT) stck err nB)
             Nothing -> do
-              io $ print "hola2"
               let v  = Hash.insert objId n map
               let v' = Hash.insert (c,r) (Objects v) $ desc world 
               let newWorld = world{desc=v'}
@@ -487,6 +527,14 @@ basketCap wId symT =
       let world = filter isWorld listVal !! 0
       basketSize world - (length $ objectsInB world)
     otherwise -> 0 -- Este nunca pasa
+
+getWorldScope :: String -> SymTable -> Int
+getWorldScope wId symT =
+  case Hash.lookup wId symT of 
+    Just listVal -> do
+      let world = filter isWorld listVal !! 0
+      numBlock world 
+    otherwise -> 0 -- Este nunca pasa    
 
 insertObject :: String -> String -> Int -> SymTable -> MyStateM()
 insertObject wId oId n symT = do

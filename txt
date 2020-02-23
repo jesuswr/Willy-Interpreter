@@ -1,10 +1,6 @@
-begin-world miobj
-
-Object-type miobj of color blue;
-
-Boolean mibool with initial value false;
-
-Goal migoal is 5 miobj objects in Basket;
-
+begin-world mimundo
 
 end-world
+
+begin-task mimundo on mimundo
+end-task
