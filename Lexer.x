@@ -209,6 +209,10 @@ data Token =
     TKEOF
     deriving(Eq)
 
+getBool :: Token -> Bool
+getBool (TKtrue _) = True
+getBool (TKfalse _) = False
+
 -- Here is defined how the Token type is an instance of Show typeclass
 instance Show Token where
     show ( TKbeginWorld (l,c) )       = "TKbeginWorld(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "

@@ -241,7 +241,7 @@ insertWInst id (STARTAT (l,c) col row dir) = do
 
 insertWInst id (GOALIS (l,c) gId gTest) = do
   (MySymState symT stck err nB ) <- get
-  case existId gId' symT isGoal of 
+  case existId gId' symT stck isGoal of 
     True  -> put (MySymState symT stck (em1:err) nB)
     False -> 
       case notExistId gId' symT stck of
@@ -273,10 +273,10 @@ insertWInst id (GOALIS (l,c) gId gTest) = do
 
 insertWInst id (BOOLEAN (l,c) boolId boolValue) = do
   (MySymState symT stck err nB ) <- get
-  case (notExistId boolId' symT stck) || (id==boolId') of
+  case not (notExistId boolId' symT stck) || (id==boolId') of
     True      -> put(MySymState symT stck (em:err) nB)
     otherwise -> do
-      let val = WBoolean (l,c) boolId' nB (show boolValue)
+      let val = WBoolean (l,c) boolId' nB (getBool boolValue)
       insToTable boolId' val
 
   where
@@ -304,7 +304,7 @@ validFinalGoal (FGID (l,c) id) = do
   case notExistId id' symT stck of
     True  -> put (MySymState symT stck (em1:err) nB)
     False ->
-      case existId id' symT isGoal || existId id' symT isBool of
+      case existId id' symT stck isGoal || existId id' symT stck isBoolean of
         False -> put (MySymState symT stck (em2:err) nB)
         True  -> return()
   where 
@@ -577,28 +577,28 @@ validTest wId (OBJECTSAT (l,c) n oId col row) symT stck
 
 
 -- id que tal, tabla, stack de scopes, funcion para filtrar
-existId :: String -> SymTable -> [Int] -> (Symvalue -> Bool) -> Bool -- Para llamadas
-existId ID symT [] _ = False
-existId ID symT (scope:scopes) isX = 
-  case Hash.lookup ID symT of
+existId :: String -> SymTable -> [Int] -> (SymValue -> Bool) -> Bool -- Para llamadas
+existId id symT [] _ = False
+existId id symT (scope:scopes) isX = 
+  case Hash.lookup id symT of
     Nothing -> False  -- Si no esta en la Symbol table no lo puedo llamar
     Just listOfValues ->        -- lista de valores que se pueden llamar con el ID en el programa en general
       case scopeBelongs scope $ filter isX listOfValues of -- quiero checkear si el scope esta en la lista
-        False -> existId ID symT scopes -- si no esta pruebo con el siguiente scope
+        False -> existId id symT scopes isX -- si no esta pruebo con el siguiente scope
         True  -> True 
 
 scopeBelongs :: Int -> [SymValue] -> Bool  -- Recorro la lista checkeando
 scopeBelongs scope [] = False
 scopeBelongs scope (val:vals)
-  | defB val == scope = True     -- los Symvalue que busques con isX deben tener atributo defB
+  | defBlock val == scope = True     -- los Symvalue que busques con isX deben tener atributo defB
   | otherwise             = scopeBelongs scope vals
 
 
 -- id que tal, tabla, stack de scopes
 notExistId :: String -> SymTable -> [Int] -> Bool -- Para declaraciones 
-notExistId ID symT []     = True
-notExistId ID symT scopeStack@(scope:scopes) = 
-  case Hash.lookup ID symT of
+notExistId id symT []     = True
+notExistId id symT scopeStack@(scope:scopes) = 
+  case Hash.lookup id symT of
     Nothing -> True  -- Si no esta en la Symbol table lo puedo usar para declarar
     Just listOfValues ->  usableIDforDeclare scope wScope listOfValues
   where wScope = scopeStack !! (length scopeStack - 2)
@@ -606,7 +606,32 @@ notExistId ID symT scopeStack@(scope:scopes) =
 usableIDforDeclare :: Int -> Int -> [SymValue] -> Bool  -- Recorro la lista checkeando
 usableIDforDeclare currentScope worldScope [] = True
 usableIDforDeclare currentScope worldScope (val:vals)
-  | defB val == currentScope                = False
-  | isBoolean val && defB val == worldScope = False
-  | isObject val  && defB val == worldScope = False
+  | defBlock val == currentScope                = False
+  | isBoolean val && defBlock val == worldScope = False
+  | isObject val  && defBlock val == worldScope = False
   | otherwise = usableIDforDeclare currentScope worldScope vals
+
+
+isGoal :: SymValue -> Bool
+isGoal Goal{} = True
+isGoal _      = False
+
+isBoolean :: SymValue -> Bool
+isBoolean WBoolean{} = True
+isBoolean _          = False
+
+isObject :: SymValue -> Bool
+isObject ObjectType{} = True
+isObject _            = False
+
+isWorld :: SymValue -> Bool
+isWorld World{} = True
+isWorld _       = False
+
+isInstruction :: SymValue -> Bool
+isInstruction Instruction{} = True
+isInstruction _             = False
+
+isTask :: SymValue -> Bool
+isTask Task{} = True
+isTask _      = False
