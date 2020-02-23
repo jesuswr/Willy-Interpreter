@@ -224,7 +224,7 @@ insertWInst id (STARTAT (l,c) col row dir) = do
   (MySymState symT stck err nB ) <- get
   case validStart id (col',row') symT of
     1 -> put (MySymState symT stck (em1:err) nB)
-    2 -> put (MySymState symT stck (em2:err) nB)
+    2 -> put (MySymState symT stck (em1:err) nB)
     3 -> put (MySymState symT stck (em3:err) nB)
     0 -> updStartPos id (col',row') dir'
 
@@ -239,12 +239,65 @@ insertWInst id (STARTAT (l,c) col row dir) = do
     em3 = "Error: hay una pared en la casilla donde se quiere poner a willy, en la linea "
           ++ show l ++ " y columna " ++ show c  
 
+insertWInst id (GOALIS (l,c) gId gTest) = do
+  (MySymState symT stck err nB ) <- get
+  case existId gId' symT isGoal of 
+    True  -> put (MySymState symT stck (em1:err) nB)
+    False -> 
+      case notExistId gId' symT stck of
+        False -> put (MySymState symT stck (em2:err) nB)
+        True  -> 
+          case validTest id gTest symT stck of
+            1 -> put (MySymState symT stck (em3:err) nB)
+            2 -> put (MySymState symT stck (em4:err) nB)
+            3 -> put (MySymState symT stck (em5:err) nB)
+            4 -> put (MySymState symT stck (em6:err) nB)
+            0 -> do
+              let val = (Goal (l,c) gId' nB gTest)
+              insToTable gId' val
+  where 
+    gId' = getStr gId
+    em1  = "Error: ya existe un Goal con el id dado, en la linea "
+          ++ show l ++ " y columna " ++ show c
+    em2  = "Error: ya existe un tipo de dato con el id dado, en la linea "
+          ++ show l ++ " y columna " ++ show c
+    em3  = "Error: la columna o fila 0 no es valida, en la linea "
+          ++ show l ++ " y columna " ++ show c
+    em4  = "Error: la casilla dada se sale de los limites del mundo, en la linea "
+          ++ show l ++ " y columna " ++ show c
+    em5  = "Error: no existe ningun objeto con el id dado, en la linea "
+          ++ show l ++ " y columna " ++ show c
+    em6  = "Error: el id de objeto dado pertenece a otro tipo, en la linea "
+          ++ show l ++ " y columna " ++ show c
+
+insertWInst id (FINALIS _ fGoal) = do
+  validFinalGoal fGoal
 
 
-
-
-
-
+validFinalGoal :: FINALGOAL -> MyStateM()
+validFinalGoal (FGAND (l,c) left right) = do
+  validFinalGoal left
+  validFinalGoal right
+validFinalGoal (FGOR (l,c) left right) = do
+  validFinalGoal left
+  validFinalGoal right
+validFinalGoal (FGNOT (l,c) exp) = do
+  validFinalGoal exp
+validFinalGoal (FGTOF (l,c) val) = return()
+validFinalGoal (FGID (l,c) id) = do
+  (MySymState symT stck err nB ) <- get
+  case notExistId id' symT stck of
+    True  -> put (MySymState symT stck (em1:err) nB)
+    False ->
+      case existId id' symT isGoal || existId id' symT isBool of
+        False -> put (MySymState symT stck (em2:err) nB)
+        True  -> return()
+  where 
+    id' = getStr id
+    em1  = "Error: el id dado no existe, en la linea "
+          ++ show l ++ " y columna " ++ show c
+    em2  = "Error: el id dado no es de Booleano o Goal, en la linea "
+          ++ show l ++ " y columna " ++ show c
 
 
 -- FUNCIONES GENERALES----------------------------
@@ -473,3 +526,36 @@ updStartPos wId pos dir = do
       let val = (World pos' id defB numB desc pos baskS objInB siz dir)
       put(MySymState (Hash.insert wId (val:xs) symT) stck err nB)
     Nothing -> return() -- Nunca pasa
+
+
+validTest :: String -> GOALTEST -> SymTable -> [Int] -> Int
+validTest wId (WILLYISAT (l,c) col row) symT stck
+  | col'*row' == 0                         = 1
+  | colLim < col' || rowLim < row'         = 2
+  | otherwise                              = 0
+  where
+    col' = getValue col
+    row' = getValue row
+    (colLim,rowLim) = getWSize wId symT
+
+validTest wId (OBJECTSIN (l,c) n oId) symT stck
+  | notExistId oId' symT stck             = 3
+  | not $ existId oId' symT stck isObject = 4
+  | otherwise                             = 0
+  where 
+    n'   = getValue n
+    oId' = getStr oId
+
+validTest wId (OBJECTSAT (l,c) n oId col row) symT stck
+  | col'*row' == 0                        = 1
+  | colLim < col' || rowLim < row'        = 2
+  | notExistId oId' symT stck             = 3
+  | not $ existId oId' symT stck isObject = 4
+  | otherwise                             = 0
+  where
+    col'            = getValue col
+    row'            = getValue row
+    (colLim,rowLim) = getWSize wId symT
+    n'              = getValue n
+    oId'            = getStr oId
+
