@@ -127,6 +127,7 @@ insertTInst (IF (l,c) guard instr ) = do
   pushScope 
   insertTInst instr
   popScope
+
 insertTInst (IFELSE (l,c) guard instr1 instr2) = do
   validTaskTest guard
   pushScope 
@@ -135,19 +136,23 @@ insertTInst (IFELSE (l,c) guard instr1 instr2) = do
   pushScope 
   insertTInst instr2
   popScope
+
 insertTInst (REPEAT (l,c) n instr) = do
   pushScope 
   insertTInst instr
   popScope
+
 insertTInst (WHILE (l,c) guard instr) = do
   validTaskTest guard
   pushScope 
   insertTInst instr
   popScope
+
 insertTInst (BEGIN (l,c) instrs) = do
   pushScope 
   insertTIBlock instrs
   popScope
+
 insertTInst (DEFINE (l,c) (TKId _ id) instr) = do
   (MySymState symT (st:stck) err nB ) <- get
   case notExistId id symT (st:stck) of
@@ -165,13 +170,17 @@ insertTInst (DEFINE (l,c) (TKId _ id) instr) = do
       popScope
   where 
     em1   = "Error: redefinicion de " ++ id ++ " en la linea "
-            ++ show l ++ " y columna " ++ show c  
+            ++ show l ++ " y columna " ++ show c 
+
 insertTInst (MOVE _) = return()
+
 insertTInst (TURNLEFT _) = return()
+
 insertTInst (TURNRIGHT _) = return()
+
 insertTInst (PICK (l,c) (TKId _ id)) = do
   (MySymState symT stck err nB ) <- get
-  case notExistId id symT stck of
+  case not $ existId id symT stck isTrue of
     True  -> put (MySymState symT stck (em1:err) nB)
     False ->
       case existId id symT stck isObject of
@@ -182,9 +191,10 @@ insertTInst (PICK (l,c) (TKId _ id)) = do
           ++ show l ++ " y columna " ++ show c
     em2  = "Error: el id dado no es de un objeto, en la linea "
           ++ show l ++ " y columna " ++ show c
+
 insertTInst (DROP (l,c) (TKId _ id)) = do
   (MySymState symT stck err nB ) <- get
-  case notExistId id symT stck of
+  case not $ existId id symT stck isTrue of
     True  -> put (MySymState symT stck (em1:err) nB)
     False ->
       case existId id symT stck isObject of
@@ -195,9 +205,10 @@ insertTInst (DROP (l,c) (TKId _ id)) = do
           ++ show l ++ " y columna " ++ show c
     em2  = "Error: el id dado no es de un objeto, en la linea "
           ++ show l ++ " y columna " ++ show c
+
 insertTInst (SET (l,c) (TKId _ id)) = do
   (MySymState symT stck err nB ) <- get
-  case notExistId id symT stck of
+  case not $ existId id symT stck isTrue of
     True  -> put (MySymState symT stck (em1:err) nB)
     False ->
       case existId id symT stck isBoolean of
@@ -208,9 +219,10 @@ insertTInst (SET (l,c) (TKId _ id)) = do
           ++ show l ++ " y columna " ++ show c
     em2  = "Error: el id dado no es de un booleano, en la linea "
           ++ show l ++ " y columna " ++ show c
+
 insertTInst (SETTO (l,c) (TKId _ id) bool) = do
   (MySymState symT stck err nB ) <- get
-  case notExistId id symT stck of
+  case not $ existId id symT stck isTrue of
     True  -> put (MySymState symT stck (em1:err) nB)
     False ->
       case existId id symT stck isBoolean of
@@ -221,9 +233,10 @@ insertTInst (SETTO (l,c) (TKId _ id) bool) = do
           ++ show l ++ " y columna " ++ show c
     em2  = "Error: el id dado no es de un booleano, en la linea "
           ++ show l ++ " y columna " ++ show c
+
 insertTInst (CLEAR (l,c) (TKId _ id)) = do
   (MySymState symT stck err nB ) <- get
-  case notExistId id symT stck of
+  case not $ existId id symT stck isTrue of
     True  -> put (MySymState symT stck (em1:err) nB)
     False ->
       case existId id symT stck isBoolean of
@@ -234,9 +247,10 @@ insertTInst (CLEAR (l,c) (TKId _ id)) = do
           ++ show l ++ " y columna " ++ show c
     em2  = "Error: el id dado no es de un booleano, en la linea "
           ++ show l ++ " y columna " ++ show c
+
 insertTInst (FLIP (l,c) (TKId _ id)) = do
   (MySymState symT stck err nB ) <- get
-  case notExistId id symT stck of
+  case not $ existId id symT stck isTrue of
     True  -> put (MySymState symT stck (em1:err) nB)
     False ->
       case existId id symT stck isBoolean of
@@ -247,7 +261,9 @@ insertTInst (FLIP (l,c) (TKId _ id)) = do
           ++ show l ++ " y columna " ++ show c
     em2  = "Error: el id dado no es de un booleano, en la linea "
           ++ show l ++ " y columna " ++ show c
+
 insertTInst (TERMINATE _) = return()
+
 insertTInst (INSTRID (l,c) (TKId _ id)) = do
   (MySymState symT stck err nB ) <- get
   case existId id symT stck isInstruction of
@@ -428,33 +444,28 @@ insertWInst id (STARTAT (l,c) col row dir) = do
 
 insertWInst id (GOALIS (l,c) gId gTest) = do
   (MySymState symT stck err nB ) <- get
-  case existId gId' symT stck isGoal of 
-    True  -> put (MySymState symT stck (em1:err) nB)
-    False -> 
-      case notExistId gId' symT stck of
-        False -> put (MySymState symT stck (em2:err) nB)
-        True  -> 
-          case validTest id gTest symT stck of
-            1 -> put (MySymState symT stck (em3:err) nB)
-            2 -> put (MySymState symT stck (em4:err) nB)
-            3 -> put (MySymState symT stck (em5:err) nB)
-            4 -> put (MySymState symT stck (em6:err) nB)
-            0 -> do
-              let val = (Goal (l,c) gId' nB gTest)
-              insToTable gId' val
+  case notExistId gId' symT stck of
+    False -> put (MySymState symT stck (em1:err) nB)
+    True  -> 
+      case validTest id gTest symT stck of
+        1 -> put (MySymState symT stck (em2:err) nB)
+        2 -> put (MySymState symT stck (em3:err) nB)
+        3 -> put (MySymState symT stck (em4:err) nB)
+        4 -> put (MySymState symT stck (em5:err) nB)
+        0 -> do
+          let val = (Goal (l,c) gId' nB gTest)
+          insToTable gId' val
   where 
     gId' = getStr gId
-    em1  = "Error: ya existe un Goal con el id dado, en la linea "
+    em1  = "Error: redefinicion de " ++ gId' ++ ". Id dado ya estaba en uso, en la linea "
           ++ show l ++ " y columna " ++ show c
-    em2  = "Error: ya existe un tipo de dato con el id dado, en la linea "
+    em2  = "Error: la columna o fila 0 no es valida, en la linea "
           ++ show l ++ " y columna " ++ show c
-    em3  = "Error: la columna o fila 0 no es valida, en la linea "
+    em3  = "Error: la casilla dada se sale de los limites del mundo, en la linea "
           ++ show l ++ " y columna " ++ show c
-    em4  = "Error: la casilla dada se sale de los limites del mundo, en la linea "
+    em4  = "Error: no existe ningun objeto con el id dado, en la linea "
           ++ show l ++ " y columna " ++ show c
-    em5  = "Error: no existe ningun objeto con el id dado, en la linea "
-          ++ show l ++ " y columna " ++ show c
-    em6  = "Error: el id de objeto dado pertenece a otro tipo, en la linea "
+    em5  = "Error: el id de objeto dado pertenece a otro tipo, en la linea "
           ++ show l ++ " y columna " ++ show c
 
 
@@ -480,15 +491,19 @@ validFinalGoal :: FINALGOAL -> MyStateM()
 validFinalGoal (FGAND (l,c) left right) = do
   validFinalGoal left
   validFinalGoal right
+
 validFinalGoal (FGOR (l,c) left right) = do
   validFinalGoal left
   validFinalGoal right
+
 validFinalGoal (FGNOT (l,c) exp) = do
   validFinalGoal exp
+
 validFinalGoal (FGTOF (l,c) val) = return()
+
 validFinalGoal (FGID (l,c) id) = do
   (MySymState symT stck err nB ) <- get
-  case notExistId id' symT stck of
+  case not $ existId id' symT stck isTrue of
     True  -> put (MySymState symT stck (em1:err) nB)
     False ->
       case existId id' symT stck isGoal || existId id' symT stck isBoolean of
@@ -507,14 +522,17 @@ validTaskTest :: TEST -> MyStateM()
 validTaskTest (TESTAND (l,c) left right) = do
   validTaskTest left
   validTaskTest right
+
 validTaskTest (TESTOR (l,c) left right) = do
   validTaskTest left
   validTaskTest right
+
 validTaskTest (TESTNOT (l,c) exp) = do
   validTaskTest exp
+
 validTaskTest (TESTID (l,c) (TKId _ id)) = do
   (MySymState symT stck err nB ) <- get
-  case notExistId id symT stck of
+  case not $ existId id symT stck isTrue of
     True  -> put (MySymState symT stck (em1:err) nB)
     False ->
       case existId id symT stck isBoolOrGuard of
@@ -526,9 +544,10 @@ validTaskTest (TESTID (l,c) (TKId _ id)) = do
           ++ show l ++ " y columna " ++ show c
     em2  = "Error: el id dado no es de Booleano o Goal, en la linea "
           ++ show l ++ " y columna " ++ show c
+
 validTaskTest (FOUND (l,c) (TKId _ id)) = do
   (MySymState symT stck err nB ) <- get
-  case notExistId id symT stck of
+  case not $ existId id symT stck isTrue of
     True  -> put (MySymState symT stck (em1:err) nB)
     False ->
       case existId id symT stck isObject of
@@ -539,9 +558,10 @@ validTaskTest (FOUND (l,c) (TKId _ id)) = do
           ++ show l ++ " y columna " ++ show c
     em2  = "Error: el id dado no es de un objeto, en la linea "
           ++ show l ++ " y columna " ++ show c
+
 validTaskTest (CARRYING (l,c) (TKId _ id)) = do
   (MySymState symT stck err nB ) <- get
-  case notExistId id symT stck of
+  case not $ existId id symT stck isTrue of
     True  -> put (MySymState symT stck (em1:err) nB)
     False ->
       case existId id symT stck isObject of
@@ -552,6 +572,7 @@ validTaskTest (CARRYING (l,c) (TKId _ id)) = do
           ++ show l ++ " y columna " ++ show c
     em2  = "Error: el id dado no es de un objeto, en la linea "
           ++ show l ++ " y columna " ++ show c
+          
 validTaskTest (TESTTOF _ bool) = return ()
 validTaskTest (FRONTCLEAR _ ) = return ()
 validTaskTest (LEFTCLEAR _ ) = return ()
@@ -774,7 +795,7 @@ validTest wId (WILLYISAT (l,c) col row) symT stck
     (colLim,rowLim) = getWSize wId symT
 
 validTest wId (OBJECTSIN (l,c) n oId) symT stck
-  | notExistId oId' symT stck             = 3
+  | not $ existId oId' symT stck isTrue   = 3
   | not $ existId oId' symT stck isObject = 4
   | otherwise                             = 0
   where 
@@ -784,7 +805,7 @@ validTest wId (OBJECTSIN (l,c) n oId) symT stck
 validTest wId (OBJECTSAT (l,c) n oId col row) symT stck
   | col'*row' == 0                        = 1
   | colLim < col' || rowLim < row'        = 2
-  | notExistId oId' symT stck             = 3
+  | not $ existId oId' symT stck isTrue   = 3
   | not $ existId oId' symT stck isObject = 4
   | otherwise                             = 0
   where
