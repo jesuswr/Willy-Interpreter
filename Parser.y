@@ -168,8 +168,6 @@ FINALGOAL1 :: { AST.FINALGOAL }
 FINALGOAL1 : not FINALGOAL                              { AST.FGNOT (tokenPos $1) $2 }
            | '(' FINALGOAL ')'                          { $2 }
            | Id                                         { AST.FGID (tokenPos $1) $1 }
-           | true                                       { AST.FGTOF (tokenPos $1) $1 }
-           | false                                      { AST.FGTOF (tokenPos $1) $1 }
 
 
 
