@@ -5,6 +5,7 @@ import Lexer
 import Parser
 import AST
 import PrintParser
+import PrintSymTable
 import Control.Monad.State
 import SymTable
 import qualified Data.Map as Hash
@@ -44,5 +45,8 @@ showResults str = case scanner str of
                       let tk = reverse $ parse toks
                       let initTableState = MySymState Hash.empty [0] [] 0
                       putStr $ evalState (printParser tk) (PrintState [] 0)
-                      runStateT (createSymTable tk)  initTableState
+                      putStrLn "\n  -  -  - \n"
+                      case evalState (createSymTable tk)  initTableState of
+                        Left errorStr -> putStrLn errorStr
+                        Right symT -> putStr $ "TABLE:\n\n" ++ printSymTable symT
                       return()

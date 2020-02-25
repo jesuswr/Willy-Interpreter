@@ -17,7 +17,7 @@ printSymTable symT = unlines $ map (getSymString') (Hash.toList symT)
 
 
 getSymString' :: (String, [ST.SymValue]) -> String
-getSymString' (id, [symVal]) = getSymStrings id [symVal] 
+getSymString' (id, symVal) = getSymStrings id symVal 
 
 getSymStrings :: String -> [ST.SymValue] -> String
 getSymStrings id [s]    = getSymString id s
@@ -31,9 +31,9 @@ getSymString id (ST.World _ _
   id ++ ":\n"
   ++ "  tipo: mundo\n"
   ++ "  identificador de bloque: " ++ (show idBlock) ++ "\n"
-  ++ "  tamanio: " ++ (show x) ++ (show y) ++ "\n"
-  ++ "  muros y objetos:\n" ++ (printWorldDesc' 4 descW)
-  ++ "  posicion de willy: " ++ (show wx) ++ (show wy) ++ "\n"
+  ++ "  tamanio: " ++ (show x) ++ " " ++ (show y) ++ "\n"
+  ++ "  muros y objetos:" ++ (printWorldDesc' 4 descW)
+  ++ "  posicion de willy: " ++ (show wx) ++ " " ++ (show wy) ++ "\n"
   ++ "  direccion de willy: " ++ willyDir ++ "\n"
   ++ "  tamanio de la cesta: " ++ (show baskSz) ++ "\n"
   ++ "  objetos en la cesta:\n" ++ (printBasketObj 4 objInBsk)
@@ -62,7 +62,9 @@ getSymString id (ST.Instruction _ _ defBlock numBlock inst) =
   ++ "  tipo: instrucción\n"
   ++ "  bloque de declaracion: " ++ (show defBlock) ++ "\n"
   ++ "  identificador de bloque: " ++ (show numBlock) ++ "\n"
-  ++ "  AST asociado:\n" ++ (printInstr' 4 inst defBlock)
+  ++ "  AST asociado:" ++ case (printInstr' 4 inst defBlock) of
+    "" -> " null\n"
+    str -> "\n" ++ str
 
 getSymString id (ST.Task _ _ _ numBlock onWorld) =
   id ++ ":\n"
@@ -72,28 +74,51 @@ getSymString id (ST.Task _ _ _ numBlock onWorld) =
 
 
 printFinalGoal :: Int -> FINALGOAL -> String
-printFinalGoal spaces finalG = "JAJA"
+printFinalGoal spaces (FGAND _ leftFG rightFG) =
+  replicate spaces ' ' ++ "AND:\n"
+  ++ replicate spaces ' ' ++ "lado izquierdo:\n"
+  ++ printFinalGoal (spaces+2) leftFG
+  ++ replicate spaces ' ' ++ "lado derecho:\n"
+  ++ printFinalGoal (spaces+2) rightFG
 
+
+printFinalGoal spaces (FGOR _ leftFG rightFG) =
+  replicate spaces ' ' ++ "OR:\n"
+  ++ replicate spaces ' ' ++ "lado izquierdo:\n"
+  ++ printFinalGoal (spaces+2) leftFG
+  ++ replicate spaces ' ' ++ "lado derecho:\n"
+  ++ printFinalGoal (spaces+2) rightFG
+
+printFinalGoal spaces (FGNOT _ expFG) =
+  replicate spaces ' ' ++ "NOT:\n"
+  ++ replicate spaces ' ' ++ "expresion:\n"
+  ++ printFinalGoal (spaces+2) expFG
+
+printFinalGoal spaces (FGID _ idFG) =
+  replicate spaces ' ' ++ "ID: " 
+  ++(getStr idFG) ++ "\n"
 
 
 printWorldDesc' :: Int -> ST.WorldDesc -> String
 printWorldDesc' spaces wdesc = 
-  unlines $ map (printWorldDesc spaces) (Hash.toList wdesc)
+  case unlines $ map (printWorldDesc spaces) (Hash.toList wdesc) of
+    ""  -> " []\n"
+    str -> "\n" ++ str
 
 printWorldDesc :: Int -> ((Int,Int), ST.WorldElements) -> String
 printWorldDesc spaces ((c,r), ST.Wall) = 
   replicate spaces ' ' ++ "En la casilla (" 
-  ++ (show c) ++ ", " ++ (show r) ++ ") hay un muro.\n"
+  ++ (show c) ++ ", " ++ (show r) ++ ") hay un muro."
 
 printWorldDesc spaces ((c,r), (ST.Objects objsH)) =
   replicate spaces ' ' ++ "En la casilla (" 
-  ++ (show c) ++ ", " ++ (show r) 
-  ++ ") se encuentran los siguientes objetos:\n"
-  ++ (unlines $ map (printPair' (spaces+2)) (Hash.toList objsH) )
+  ++ (show c) ++ ", " ++ (show r) ++ "):\n"
+  ++ (init $ unlines $ map (printPair' (spaces+2)) (Hash.toList objsH) )
 
 
 
 printBasketObj :: Int -> [String] -> String
+printBasketObj spaces [] = replicate spaces ' ' ++ "cesta vacia\n"
 printBasketObj spaces objs = 
   unlines $ map (printPair spaces) $ frequency objs
 
@@ -103,12 +128,13 @@ frequency = map (\l -> (length l, head l)) . L.group . L.sort
 printPair :: Int -> (Int, String) -> String
 printPair spaces (cnt, objId) =
   replicate spaces ' ' ++ "hay " ++ (show cnt) 
-  ++ "objetos de tipo " ++ objId
+  ++ " objetos de tipo " ++ objId
 
 printPair' :: Int -> (String, Int) -> String
 printPair' spaces (objId, cnt) =
   replicate spaces ' ' ++ "hay " ++ (show cnt) 
-  ++ "objetos de tipo " ++ objId
+  ++ " objetos de tipo " ++ objId
+
 
 
 printGoalTest :: Int -> GOALTEST -> String
@@ -124,6 +150,8 @@ printGoalTest spaces (OBJECTSAT _ n objId c r) =
   replicate spaces ' ' ++ "goal: " ++ (show n) ++ (getStr objId)
   ++ " objects at "
   ++ (show $ getValue c) ++ " " ++ (show $ getValue r) ++ "\n"
+
+
 
 printInstr' :: Int -> TASKINSTR -> Int -> String
 printInstr' spaces inst currentScope = unlines $ reverse result

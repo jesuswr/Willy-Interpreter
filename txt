@@ -1,5 +1,23 @@
 begin-world mimundo
+World 9 9;
+Wall east from 2 2 to 8 2;
+Object-type bebesitaaa of color red;
+Place 3 of bebesitaaa at 9 9;
 Boolean id with initial value true;
 Final goal is id;
 end-world
+
+begin-task mitask on mimundo
+define moves as
+    define moves as 
+    	define mo as
+            begin 
+                move; 
+                move; 
+                move; 
+            end
+
+define f as moves;
+moves;
+end-task
 

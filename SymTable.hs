@@ -44,19 +44,19 @@ type SymTable = Hash.Map String [SymValue]
 data MySymState = MySymState{ symTable :: SymTable , stack :: [Int] , error :: [String] 
                             , nBlock :: Int }
 
-type MyStateM a = StateT MySymState IO a
+type MyStateM a = State MySymState a
 
 
-io :: IO a -> MyStateM a
-io = liftIO
+--io :: IO a -> MyStateM a
+--io = liftIO
 
 
 createSymTable :: [BLOCK] -> MyStateM (Either String SymTable)
 createSymTable [] = do
   (MySymState symT stck err nB ) <- get
-  io $ print symT
-  io $ putStr $ unlines $ reverse err
-  io $ print stck
+  --io $ print symT
+  --io $ putStr $ unlines $ reverse err
+  --io $ print stck
 
   return $ case err of
     []   -> Right symT

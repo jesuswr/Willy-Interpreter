@@ -12,9 +12,12 @@ type MyPrintStateM a = State PrintState a
 printParser :: [BLOCK] -> MyPrintStateM String
 printParser [] = do 
     (PrintState str int ) <- get
-    return (unlines $ (taskStr:reverse str)) 
+    case str of
+        [] -> return (taskStr ++ "\n  no hay tareas\n")
+        otherwise -> 
+            return (unlines $ (taskStr:reverse str)) 
     where
-        taskStr = "TAREAS:"
+        taskStr = "TAREAS:\n"
 printParser (x:xs) = do
     printBlock x
     printParser xs
