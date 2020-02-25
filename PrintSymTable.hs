@@ -25,16 +25,19 @@ getSymStrings id (s:ss) = (getSymString id s) ++ "\n"
                           ++ (getSymStrings id ss)
 
 getSymString :: String -> ST.SymValue -> String
-getSymString id (ST.World _ _ decBlock idBlock descW (wx,wy) baskSz objInBsk (x,y) willyDir) =
+getSymString id (ST.World _ _ 
+  decBlock idBlock descW (wx,wy) baskSz
+  objInBsk (x,y) willyDir (ST.FinalG goal)) =
   id ++ ":\n"
   ++ "  tipo: mundo\n"
   ++ "  identificador de bloque: " ++ (show idBlock) ++ "\n"
   ++ "  tamanio: " ++ (show x) ++ (show y) ++ "\n"
-  ++ "  muros:\n" ++ (printWall 4 descW)
+  ++ "  muros y objetos:\n" ++ (printWorldDesc' 4 descW)
   ++ "  posicion de willy: " ++ (show wx) ++ (show wy) ++ "\n"
   ++ "  direccion de willy: " ++ willyDir ++ "\n"
   ++ "  tamanio de la cesta: " ++ (show baskSz) ++ "\n"
-  ++ "  objetos en la cesta: " ++ (printBasketObj 4 objInBsk)
+  ++ "  objetos en la cesta:\n" ++ (printBasketObj 4 objInBsk)
+  ++ "  final goal:\n" ++ (printFinalGoal 4 goal)
 
 getSymString id (ST.ObjectType _ _ defBlock color) =
   id ++ ":\n"
@@ -68,9 +71,27 @@ getSymString id (ST.Task _ _ _ numBlock onWorld) =
   ++ "  identificador de bloque: " ++ (show numBlock) ++ "\n"
 
 
+printFinalGoal :: Int -> FINALGOAL -> String
+printFinalGoal spaces finalG = "JAJA"
 
-printWall :: Int -> ST.WorldDesc -> String
-printWall spaces wdesc = " jeje "
+
+
+printWorldDesc' :: Int -> ST.WorldDesc -> String
+printWorldDesc' spaces wdesc = 
+  unlines $ map (printWorldDesc spaces) (Hash.toList wdesc)
+
+printWorldDesc :: Int -> ((Int,Int), ST.WorldElements) -> String
+printWorldDesc spaces ((c,r), ST.Wall) = 
+  replicate spaces ' ' ++ "En la casilla (" 
+  ++ (show c) ++ ", " ++ (show r) ++ ") hay un muro.\n"
+
+printWorldDesc spaces ((c,r), (ST.Objects objsH)) =
+  replicate spaces ' ' ++ "En la casilla (" 
+  ++ (show c) ++ ", " ++ (show r) 
+  ++ ") se encuentran los siguientes objetos:\n"
+  ++ (unlines $ map (printPair' (spaces+2)) (Hash.toList objsH) )
+
+
 
 printBasketObj :: Int -> [String] -> String
 printBasketObj spaces objs = 
@@ -81,6 +102,11 @@ frequency = map (\l -> (length l, head l)) . L.group . L.sort
 
 printPair :: Int -> (Int, String) -> String
 printPair spaces (cnt, objId) =
+  replicate spaces ' ' ++ "hay " ++ (show cnt) 
+  ++ "objetos de tipo " ++ objId
+
+printPair' :: Int -> (String, Int) -> String
+printPair' spaces (objId, cnt) =
   replicate spaces ' ' ++ "hay " ++ (show cnt) 
   ++ "objetos de tipo " ++ objId
 
