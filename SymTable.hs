@@ -523,8 +523,6 @@ validFinalGoal (FGOR (l,c) left right) = do
 validFinalGoal (FGNOT (l,c) exp) = do
   validFinalGoal exp
 
-validFinalGoal (FGTOF (l,c) val) = return()
-
 validFinalGoal (FGID (l,c) id) = do
   (MySymState symT stck err nB ) <- get
   case not $ existId id' symT stck isTrue of

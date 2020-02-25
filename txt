@@ -1,7 +1,5 @@
 begin-world mimundo
-
+Boolean id with initial value true;
 Final goal is id;
-Final goal is true or false;
-
 end-world
 

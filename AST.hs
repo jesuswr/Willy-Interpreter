@@ -41,7 +41,6 @@ data FINALGOAL = FGAND{ fgStartPos :: (Int,Int) , fgLeftExp :: FINALGOAL
                       }
                | FGNOT{ fgStartPos :: (Int,Int) , fgExp :: FINALGOAL }
                | FGID{ fgStartPos :: (Int,Int) , fgId :: Token }
-               | FGTOF{ fgStartPos :: (Int,Int) , fgVal :: Token }
                deriving(Show)
 
 data TASKINSTR = IF{ tiPos :: (Int,Int) , guard :: TEST , instr :: TASKINSTR }
