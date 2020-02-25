@@ -17,8 +17,10 @@ type ObjectsInCell = Hash.Map String Int
 -- Data type to represent the elements of the world, can be a wall or objects
 data WorldElements = Wall | Objects{ map :: ObjectsInCell} deriving(Show)
 
+-- Data type to represent the final goal of the world
 data FinalGoal = None | FinalG{ goal :: FINALGOAL } deriving(Show)
 
+-- Data type to represent the values that the table can contain
 data SymValue = World{ startPos :: Pos , id :: String 
                      , defBlock :: Int , numBlock :: Int  
                      , desc :: WorldDesc , willyIsAt :: Pos 
@@ -43,6 +45,7 @@ data SymValue = World{ startPos :: Pos , id :: String
                     }
               deriving(Show)
 
+-- Data type of the table, a hash from String to a list of SymValues
 type SymTable = Hash.Map String [SymValue]
 
 -- Data type to create the symbols table, using a LeBlanc-Cook implementation
