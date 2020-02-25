@@ -616,14 +616,14 @@ getWSize id symT =
 -- 0 in case that the wall is valid and x>0 in case of error
 checkWall :: Int -> Int -> Int -> Int -> String -> String -> SymTable -> Int
 checkWall x1 y1 x2 y2 dir worldId symT
-  | x1 > xlim || x2 > xlim                          = 1
-  | y1 > ylim || y2 > ylim                          = 1
-  | dir == "north" && (x1 /= x2 || y2 > y1)         = 2
-  | dir == "south" && (x1 /= x2 || y2 < y1)         = 2
-  | dir == "east"  && (x1 > x2 || y2 /= y1)         = 2
-  | dir == "west"  && (x1 < x2 || y2 /= y1)         = 2
-  | not $ clearForWall x1 y1 x2 y2 dir worldId symT = 3
-  | otherwise                                       = 0
+  | x1 > xlim || x2 > xlim                          = 1 -- a cell is out of the world
+  | y1 > ylim || y2 > ylim                          = 1 -- a cell is out of the world
+  | dir == "north" && (x1 /= x2 || y2 > y1)         = 2 -- the direction is wrong
+  | dir == "south" && (x1 /= x2 || y2 < y1)         = 2 -- the direction is wrong
+  | dir == "east"  && (x1 > x2 || y2 /= y1)         = 2 -- the direction is wrong
+  | dir == "west"  && (x1 < x2 || y2 /= y1)         = 2 -- the direction is wrong
+  | not $ clearForWall x1 y1 x2 y2 dir worldId symT = 3 -- theres something in the cell
+  | otherwise                                       = 0 -- no problem
   where (xlim,ylim) = getWSize worldId symT
 
 
@@ -846,18 +846,18 @@ validTest wId (WILLYISAT (l,c) col row) symT stck
 
 validTest wId (OBJECTSIN (l,c) n oId) symT stck
   | not $ existId oId' symT stck isTrue   = 3 -- the id doesnt exist
-  | not $ existId oId' symT stck isObject = 4
-  | otherwise                             = 0
+  | not $ existId oId' symT stck isObject = 4 -- the id isnt from an object
+  | otherwise                             = 0 -- no problem
   where 
     n'   = getValue n
     oId' = getStr oId
 
 validTest wId (OBJECTSAT (l,c) n oId col row) symT stck
-  | col'*row' == 0                        = 1
-  | colLim < col' || rowLim < row'        = 2
-  | not $ existId oId' symT stck isTrue   = 3
-  | not $ existId oId' symT stck isObject = 4
-  | otherwise                             = 0
+  | col'*row' == 0                        = 1 -- cant have col or row as 0
+  | colLim < col' || rowLim < row'        = 2 -- the position is out of the world
+  | not $ existId oId' symT stck isTrue   = 3 -- the id doesnt exist
+  | not $ existId oId' symT stck isObject = 4 -- the id isnt from an object
+  | otherwise                             = 0 -- no problem
   where
     col'            = getValue col
     row'            = getValue row
@@ -866,71 +866,94 @@ validTest wId (OBJECTSAT (l,c) n oId col row) symT stck
     oId'            = getStr oId
 
 
--- id que tal, tabla, stack de scopes, funcion para filtrar
-existId :: String -> SymTable -> [Int] -> (SymValue -> Bool) -> Bool -- Para llamadas
+-- Receives the id of the SymValue, the table, the stack of scopes and a function
+-- that tells if the SymValue is from the wanted type and returns true if there exists 
+-- a SymValue with that id in the scopes or false otherwise
+existId :: String -> SymTable -> [Int] -> (SymValue -> Bool) -> Bool 
 existId id symT [] _ = False
 existId id symT (scope:scopes) isX = 
   case Hash.lookup id symT of
-    Nothing -> False  -- Si no esta en la Symbol table no lo puedo llamar
-    Just listOfValues ->        -- lista de valores que se pueden llamar con el ID en el programa en general
-      case scopeBelongs scope $ filter isX listOfValues of -- quiero checkear si el scope esta en la lista
-        False -> existId id symT scopes isX -- si no esta pruebo con el siguiente scope
-        True  -> True 
+    Nothing -> False -- theres nothing with that id
+    Just listOfValues -> -- list of values with that id in ALL scopes
+      case scopeBelongs scope $ filter isX listOfValues of -- check for scope in stack
+        False -> existId id symT scopes isX -- if its not, look with the next scope
+        True  -> True -- if it is return true
 
-scopeBelongs :: Int -> [SymValue] -> Bool  -- Recorro la lista checkeando
+
+-- Receives an scope, a list of SymValues and returns true if there is a SymValue
+-- with that scope or false otherwise
+scopeBelongs :: Int -> [SymValue] -> Bool  
 scopeBelongs scope [] = False
 scopeBelongs scope (val:vals)
-  | defBlock val == scope = True     -- los SymValue que busques con isX deben tener atributo defB
+  | defBlock val == scope = True
   | otherwise             = scopeBelongs scope vals
 
 
--- id que tal, tabla, stack de scopes
-notExistId :: String -> SymTable -> [Int] -> Bool -- Para declaraciones 
+-- Receives a SymValue id, the table, the stack of scopes and returns
+-- true if the id is available for use or false otherwise
+notExistId :: String -> SymTable -> [Int] -> Bool 
 notExistId id symT []     = True
 notExistId id symT scopeStack@(scope:scopes) = 
   case Hash.lookup id symT of
-    Nothing -> True  -- Si no esta en la Symbol table lo puedo usar para declarar
+    Nothing -> True 
     Just listOfValues ->  usableIDforDeclare scope wScope listOfValues
   where wScope = scopeStack !! (length scopeStack - 2)
 
-usableIDforDeclare :: Int -> Int -> [SymValue] -> Bool  -- Recorro la lista checkeando
+
+-- Receives the current scope, the scope of the world and a list of SymValues
+-- and returns true if the id is available or false otherwise
+usableIDforDeclare :: Int -> Int -> [SymValue] -> Bool 
 usableIDforDeclare currentScope worldScope [] = True
 usableIDforDeclare currentScope worldScope (val:vals)
-  | defBlock val == currentScope                = False
+  | defBlock val == currentScope                = False 
   | isBoolean val && defBlock val == worldScope = False
   | isGoal val && defBlock val == worldScope    = False
   | isObject val  && defBlock val == worldScope = False
   | otherwise = usableIDforDeclare currentScope worldScope vals
 
 
+-- Receives a SymValue and returns true if its a goal or false otherwise
 isGoal :: SymValue -> Bool
 isGoal Goal{} = True
 isGoal _      = False
 
+
+-- Receives a SymValue and returns true if its a boolean or false otherwise
 isBoolean :: SymValue -> Bool
 isBoolean WBoolean{} = True
 isBoolean _          = False
 
+
+-- Receives a SymValue and returns true if its an object or false otherwise
 isObject :: SymValue -> Bool
 isObject ObjectType{} = True
 isObject _            = False
 
+
+-- Receives a SymValue and returns true if its a world or false otherwise
 isWorld :: SymValue -> Bool
 isWorld World{} = True
 isWorld _       = False
 
+
+-- Receives a SymValue and returns true if its an instruction or false otherwise
 isInstruction :: SymValue -> Bool
 isInstruction Instruction{} = True
 isInstruction _             = False
 
+
+-- Receives a SymValue and returns true if its a task or false otherwise
 isTask :: SymValue -> Bool
 isTask Task{} = True
 isTask _      = False
 
+
+-- Receives a SymValue and returns true always
 isTrue :: SymValue -> Bool
 isTrue _ = True
 
-{- getOldWorld = filter isWorld listVal !! 0 -}
+-- Receives the new value of the world and a list of SymValues with 
+-- the same id as the world and inserts the new world in it
 updateWListVal :: SymValue -> [SymValue] -> [SymValue]
 updateWListVal newWorld (val:vals)
   | isWorld val = newWorld:vals
