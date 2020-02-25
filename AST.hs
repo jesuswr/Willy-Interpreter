@@ -1,9 +1,11 @@
 module AST where
 import Lexer
 
+-- Data types for the parser
 data BLOCK = WORLD{ worldStartPos :: (Int,Int) , worldID :: Token , worldInstrs :: [INSTR] } 
            | TASK{ taskStartPos :: (Int,Int) , taskID :: Token , onW :: Token  
-                  , taskInstrs :: [TASKINSTR] }
+                  , taskInstrs :: [TASKINSTR] 
+                 }
            deriving(Show)
 
 data INSTR = WORLDSIZE{ instrStartPos :: (Int,Int) , instrColumns :: Token , instrRows :: Token }

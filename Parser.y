@@ -105,9 +105,8 @@ import qualified AST
 %left and or  
 %nonassoc not
 
--- TO DO
-
-%% -- Grammar
+%% 
+-- Grammar
 
 BLOCK :: { [AST.BLOCK] }
 BLOCK      : BLOCK WORLD                                { $2:$1 }
@@ -235,9 +234,11 @@ SC        : SC ';'                                      { $1 }
 
 -- Error function
 parseError :: [Token] -> a
-parseError []     = error "Error al final del archivo"
-parseError (tk:tks) = error $ "Error en la linea " ++ (getLine' tk) ++ " y colummna " ++ (getColumn' tk)
-    where getLine' tok   = show $ fst $ tokenPos tok 
-          getColumn' tok = show $ snd $ tokenPos tok   	
+parseError []       = error "Error al final del archivo"
+parseError (tk:tks) = error $ "Error en la linea " ++ (getLine' tk) 
+                      ++ " y colummna " ++ (getColumn' tk)
+    where 
+      getLine' tok   = show $ fst $ tokenPos tok 
+      getColumn' tok = show $ snd $ tokenPos tok   	
 
 }
