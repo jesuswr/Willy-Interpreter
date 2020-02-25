@@ -3,6 +3,7 @@
 *.info
 *.hi
 Willy
+willy
 prueba*
 Lexer.hs
 Parser.hs

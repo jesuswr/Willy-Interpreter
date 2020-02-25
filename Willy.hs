@@ -1,3 +1,14 @@
+{-
+An Interpreter for the subject "Traductores e Interpretadores" (Translators and Interpreters) 
+of the Simon Bolivar University (USB).
+  
+  Authors:
+  
+  Neil Villamizar  15-11523
+  
+  Jesus Wahrman    15-11540
+-}
+
 import System.IO
 import System.Directory
 import System.Environment
@@ -19,17 +30,17 @@ main = do
                  hFlush stdout
                  filePath <- getLine
                  if (length $ words filePath) > 1 then do wrongFormatInput
-                 else runLexer filePath
-        [filePath] -> runLexer filePath
+                 else processFile filePath
+        [filePath] -> processFile filePath
         _ -> wrongFormatInput
     
--- Check if file exist and if so then run the lexer with that file
-runLexer :: FilePath -> IO ()
-runLexer filePath = do 
+-- Check if file exist and if so then run the project with that file
+processFile :: FilePath -> IO ()
+processFile filePath = do 
   fileExists <- doesFileExist filePath
   if fileExists then do 
     str <- readFile filePath
-    showResults (str)
+    runProject (str)
     return ()
   else do 
     putStrLn ( "Imposible abrir el archivo " ++ show filePath )
@@ -43,8 +54,8 @@ wrongFormatInput = do
 
 -- Pass the string that represents the program to interpret to the scanner 
 -- and show the resuts
-showResults :: String -> IO ()
-showResults str = 
+runProject :: String -> IO ()
+runProject str = 
   case scanner str of
     Left s -> putStr s
     Right toks -> do 

@@ -1,3 +1,14 @@
+{-
+An Interpreter for the subject "Traductores e Interpretadores" (Translators and Interpreters) 
+of the Simon Bolivar University (USB).
+  
+  Authors:
+  
+  Neil Villamizar  15-11523
+  
+  Jesus Wahrman    15-11540
+-}
+
 module ContextChecker where
 
 import AST
@@ -44,7 +55,7 @@ insertBlock (WORLD (l,c) (TKId p s) instrs) = do
 insertBlock (TASK (l,c) (TKId tP tId) (TKId wP wId) tasks) = do
   (MySymState symT stck err nB ) <- get
   case existId tId symT [0] (isToW) of
-    True  -> do -- si existe
+    True  -> do -- exists
       put(MySymState symT stck (em1:err) nB)
       insertBlock (TASK (l,c) (TKId tP $ (show $ length err) ++ tId) (TKId wP wId) tasks)  
     False ->

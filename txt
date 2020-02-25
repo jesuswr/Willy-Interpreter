@@ -1,15 +1,24 @@
 begin-world mimundo
+World 100 100;
+Wall east from 2 2 to 10 2;
 Boolean mibool2 with initial value true;
-Final goal is mibool and mibool;
+Boolean xd with initial value false;
+Final goal is mibool2 and mibool2 or not xd;
 end-world
 
-begin-task mitask on mimundo2
+{{begin-task mitask on mimundo2
 
-if true then move;
+if true then a;
 
-end-task
+end-task}}
 
 
 begin-task mitask2 on mimundo
-
+define a as 
+    define b as 
+        define c as
+        begin move; end
+a;
+move;
+if true then a; else begin move; move; end
 end-task

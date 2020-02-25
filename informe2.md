@@ -44,3 +44,5 @@ Va recorriendo el AST en preorder y va metiendo los símbolos declarados en el p
 
 
 Finalmente, si no hubo errores en ninguno de los procesos anteriores, se procede a imprimir por salida estándar siguiendo el formato de salida del proyecto. El cual consta de dos partes. En la primera se imprime una representación del AST (esto no toma en cuenta las declaraciones) que incluye los datos relacionados con cada nodo. Y la segunda parte del formato que imprime todos los símbolos contenidos en la tabla de símbolos y de nuevo todos los datos relacionados con dichos símbolos.
+
+Nota: para correr el proyecto usar el comando "make", y luego el comando "willy \< Willy\* program file \>"
