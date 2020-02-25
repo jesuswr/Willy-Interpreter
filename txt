@@ -1,19 +1,7 @@
 begin-world mimundo
-Object-type miobj of color red;
-Boolean mibool with initial value true;
-end-world
 
-
-begin-world mimundo2
-Boolean mibool with initial value false;
+Final goal is id;
+Final goal is true or false;
 
 end-world
 
-begin-task mitask on mimundo2
-define miinst as set mibool to false;
-begin 
-miinst;
-define hola as move;
-end
-
-end-task

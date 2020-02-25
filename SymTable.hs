@@ -13,11 +13,14 @@ type ObjectsInCell = Hash.Map String Int
 
 data WorldElements = Wall | Objects{ map :: ObjectsInCell} deriving(Show)
 
+data FinalGoal = None | FinalG{ goal :: FINALGOAL } deriving(Show)
+
 data SymValue = World{ startPos :: Pos , id :: String 
                      , defBlock :: Int , numBlock :: Int  
                      , desc :: WorldDesc , willyIsAt :: Pos 
                      , basketSize :: Int , objectsInB :: [String]
                      , size :: Pos , willyDirection :: String
+                     , finalG :: FinalGoal
                      }
               | ObjectType{ startPos :: Pos , id :: String 
                           , defBlock :: Int , color :: String 
@@ -74,11 +77,18 @@ insertBlock (WORLD (l,c) (TKId p s) instrs) = do
       insertWorld (l,c) s
       insertWIBlock s instrs
       popScope
+      (MySymState symT stck err nB ) <- get
+      case worldHasFG s symT of 
+        True  -> return()
+        False -> put(MySymState symT stck (em2:err) nB)
 
     where
       em    = "Error: redefinicion de " ++ s ++ " en la linea "
               ++ show l ++ " y columna " ++ show c
+      em2    = "Error: no se definio un Final Goal para " ++ s ++ " en la linea "
+              ++ show l ++ " y columna " ++ show c        
       isToW x = isTask x || isWorld x
+
 insertBlock (TASK (l,c) (TKId tP tId) (TKId wP wId) tasks) = do
   (MySymState symT stck err nB ) <- get
   case existId tId symT [0] (isToW) of
@@ -483,8 +493,22 @@ insertWInst id (BOOLEAN (l,c) boolId boolValue) = do
           ++ show l ++ " y columna " ++ show c
           
 
-insertWInst id (FINALIS _ fGoal) = do
-  validFinalGoal fGoal
+insertWInst id (FINALIS (l,c) fGoal) = do
+  (MySymState symT stck err nB ) <- get
+  case worldHasFG id symT of
+    True  -> do
+      put(MySymState symT stck (em:err) nB)
+      validFinalGoal fGoal
+    False -> do
+      validFinalGoal fGoal
+      (MySymState symT stck err' nB ) <- get
+      case length err' == length err of
+        False -> return()
+        True  -> updFinalGoal id fGoal
+
+  where 
+    em = "Error: no se pueden definir dos Final Goal en la linea "
+          ++ show l ++ " y columna " ++ show c
 
 
 validFinalGoal :: FINALGOAL -> MyStateM()
@@ -588,7 +612,7 @@ validTaskTest (LOOKWEST _ ) = return ()
 insertWorld :: Pos -> String -> MyStateM ()
 insertWorld p id = do
   (MySymState symT (st:sts) err nB ) <- get
-  let val      = World p id st (nB+1) Hash.empty (1,1) 1 [] (1,1) "north"
+  let val      = World p id st (nB+1) Hash.empty (1,1) 1 [] (1,1) "north" None
   insToTable id val
   pushScope
 
@@ -753,6 +777,27 @@ getWorldScope wId symT =
       let world = filter isWorld listVal !! 0
       numBlock world 
     otherwise -> 0 -- Este nunca pasa    
+
+worldHasFG :: String -> SymTable -> Bool
+worldHasFG wId symT =
+  case Hash.lookup wId symT of 
+    Just listVal -> do
+      let world = filter isWorld listVal !! 0
+      case finalG world of
+        None      -> False
+        otherwise -> True
+    otherwise -> False -- Este nunca pasa   
+
+updFinalGoal :: String -> FINALGOAL -> MyStateM()
+updFinalGoal wId fg = do
+  (MySymState symT stck err nB ) <- get
+  case Hash.lookup wId symT of
+    Just listVal -> do
+      let oldWorld = filter isWorld listVal !! 0
+      let newWorld = oldWorld{finalG = FinalG fg}
+      put(MySymState (Hash.insert wId (updateWListVal newWorld listVal) symT) stck err nB)
+    Nothing -> return() -- Nunca pasa
+
 
 insertObject :: String -> String -> Int -> SymTable -> MyStateM()
 insertObject wId oId n symT = do
