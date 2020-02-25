@@ -10,7 +10,7 @@ data PrintState = PrintState{ output :: [String] , blockN :: Int } deriving(Show
 
 type MyPrintStateM a = State PrintState a
 
-
+-- Receives a list of BLOCKs (World or Task) and prints them
 printParser :: [BLOCK] -> MyPrintStateM String
 printParser [] = do 
   (PrintState str int ) <- get
@@ -23,14 +23,14 @@ printParser (x:xs) = do
   printBlock x
   printParser xs
 
-
+-- Increases the block number of the state
 incBlockN :: MyPrintStateM ()
 incBlockN = do
   (PrintState str int ) <- get
   put (PrintState str (int+1) )
   return ()
 
-
+-- Receives a BLOCK (World or Task) and prints it
 printBlock :: BLOCK -> MyPrintStateM ()
 printBlock (WORLD _ _ _) = do
   incBlockN
@@ -56,6 +56,8 @@ printBlock (TASK _ taskId onWorld taskInstrs) = do
     bNum = "    identificador de bloque: "
 
 
+-- Receives the indentation level, a list of task instructions
+-- and prints them
 printInstrBlock :: Int -> [TASKINSTR] -> MyPrintStateM ()
 printInstrBlock spaces [] = return ()
 printInstrBlock spaces (x:xs) = do
@@ -63,6 +65,8 @@ printInstrBlock spaces (x:xs) = do
   printInstrBlock spaces xs
 
 
+-- Receives the indentation level, a task instruction
+-- and prints it
 printInstr :: Int -> TASKINSTR -> MyPrintStateM ()
 printInstr spaces (IF _ test tInst) = do 
   incBlockN -- IF have his own scope
@@ -237,7 +241,7 @@ printInstr spaces (INSTRID _ id) = do
     li = replicate spaces ' ' ++ "LLAMADA A INSTRUCCION:"
     st = replicate (spaces+2) ' ' ++ (getStr id)
 
-
+-- Receives the indentation level, a test and prints it
 printGuard :: Int -> TEST -> MyPrintStateM ()
 printGuard spaces (TESTTOF _ val) = do
   (PrintState str int) <- get
@@ -350,10 +354,7 @@ printGuard spaces (CARRYING _ id) = do
     ob = replicate (spaces+4) ' ' ++ "identificador objeto:"
     io = replicate (spaces+6) ' ' ++ (getStr id)
 
-
-
-
-
+-- Receives a list of TASKINTRs and traverses it to update the block number
 traverseDefineInstrs :: [TASKINSTR] -> MyPrintStateM ()
 traverseDefineInstrs [] = return ()
 traverseDefineInstrs (tInst:tInsts) = do
@@ -361,6 +362,7 @@ traverseDefineInstrs (tInst:tInsts) = do
   traverseDefineInstrs tInsts
 
 
+-- Receives a TASKINTR and traverses it to update the block number
 traverseDefineInstr :: TASKINSTR -> MyPrintStateM ()
 traverseDefineInstr (BEGIN _ tInsts) = do
   incBlockN

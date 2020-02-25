@@ -1,3 +1,15 @@
 begin-world mimundo
-
+Boolean mibool2 with initial value true;
+Final goal is mibool and mibool;
 end-world
+
+begin-task mitask on mimundo2
+
+if true then move;
+
+end-task
+
+
+begin-task mitask2 on mimundo
+
+end-task

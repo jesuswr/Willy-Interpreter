@@ -10,20 +10,24 @@ import PrintParser as PP
 import Control.Monad.State
 
 
---type MyPrintStateM a = State PrintState a
-
+-- Receives the SymTable and prints it in the wanted format
 printSymTable :: ST.SymTable -> String 
 printSymTable symT = unlines $ map (getSymString') (Hash.toList symT)
 
 
+-- Receives a element of the table of the form (id,[value]) and prints it
 getSymString' :: (String, [ST.SymValue]) -> String
 getSymString' (id, symVal) = getSymStrings id symVal 
 
+
+-- Receives an id and a list of values with that id and prints them
 getSymStrings :: String -> [ST.SymValue] -> String
 getSymStrings id [s]    = getSymString id s
 getSymStrings id (s:ss) = (getSymString id s) ++ "\n"
                           ++ (getSymStrings id ss)
 
+
+-- Receives an id and a value with that id and prints it
 getSymString :: String -> ST.SymValue -> String
 getSymString id (ST.World _ _ 
   decBlock idBlock descW (wx,wy) baskSz
@@ -73,6 +77,7 @@ getSymString id (ST.Task _ _ _ numBlock onWorld) =
   ++ "  identificador de bloque: " ++ (show numBlock) ++ "\n"
 
 
+-- Receives the indentation level and a FINALGOAl and prints it
 printFinalGoal :: Int -> FINALGOAL -> String
 printFinalGoal spaces (FGAND _ leftFG rightFG) =
   replicate spaces ' ' ++ "AND:\n"
@@ -80,7 +85,6 @@ printFinalGoal spaces (FGAND _ leftFG rightFG) =
   ++ printFinalGoal (spaces+2) leftFG
   ++ replicate spaces ' ' ++ "lado derecho:\n"
   ++ printFinalGoal (spaces+2) rightFG
-
 
 printFinalGoal spaces (FGOR _ leftFG rightFG) =
   replicate spaces ' ' ++ "OR:\n"
@@ -99,12 +103,17 @@ printFinalGoal spaces (FGID _ idFG) =
   ++(getStr idFG) ++ "\n"
 
 
+-- Receives the indentation level, the world description and 
+-- prints it
 printWorldDesc' :: Int -> ST.WorldDesc -> String
 printWorldDesc' spaces wdesc = 
   case unlines $ map (printWorldDesc spaces) (Hash.toList wdesc) of
     ""  -> " []\n"
     str -> "\n" ++ str
 
+
+-- Receives the indentation level, the elements of the world in the format
+-- ( Position , Elements) and prints them 
 printWorldDesc :: Int -> ((Int,Int), ST.WorldElements) -> String
 printWorldDesc spaces ((c,r), ST.Wall) = 
   replicate spaces ' ' ++ "En la casilla (" 
@@ -116,27 +125,37 @@ printWorldDesc spaces ((c,r), (ST.Objects objsH)) =
   ++ (init $ unlines $ map (printPair' (spaces+2)) (Hash.toList objsH) )
 
 
-
+-- Receives the indentation level, the basket description and 
+-- prints it
 printBasketObj :: Int -> [String] -> String
 printBasketObj spaces [] = replicate spaces ' ' ++ "cesta vacia\n"
 printBasketObj spaces objs = 
   unlines $ map (printPair spaces) $ frequency objs
 
+
+-- Receives a list of ids and transforms it to a list of (Int,id)
+-- that represent how many times an id shows
 frequency :: Ord a => [a] -> [(Int,a)] 
 frequency = map (\l -> (length l, head l)) . L.group . L.sort
 
+
+-- Receives the indentation level and a pair that represents 
+-- the number of times that an id shows and prints it
 printPair :: Int -> (Int, String) -> String
 printPair spaces (cnt, objId) =
   replicate spaces ' ' ++ "hay " ++ (show cnt) 
   ++ " objetos de tipo " ++ objId
 
+
+-- Receives the indentation level and a pair that represents 
+-- the number of times that an id shows and prints it
 printPair' :: Int -> (String, Int) -> String
 printPair' spaces (objId, cnt) =
   replicate spaces ' ' ++ "hay " ++ (show cnt) 
   ++ " objetos de tipo " ++ objId
 
 
-
+-- Receives the indentation level and a GOALTEST and prints it 
 printGoalTest :: Int -> GOALTEST -> String
 printGoalTest spaces (WILLYISAT _ c r) =
   replicate spaces ' ' ++ "goal: willy is at " 
@@ -152,10 +171,9 @@ printGoalTest spaces (OBJECTSAT _ n objId c r) =
   ++ (show $ getValue c) ++ " " ++ (show $ getValue r) ++ "\n"
 
 
-
+-- Receives the indentation level, a task instruction, the current scope
+-- and prints it
 printInstr' :: Int -> TASKINSTR -> Int -> String
 printInstr' spaces inst currentScope = unlines $ reverse result
   where ((),(PrintState result _)) = do 
         runState (printInstr spaces inst) (PrintState [] currentScope)
-
-
