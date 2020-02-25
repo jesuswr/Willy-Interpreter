@@ -50,9 +50,12 @@ showResults str =
     Right toks -> do 
       let tk = reverse $ parse toks
       let initTableState = MySymState Hash.empty [0] [] 0
-      putStr $ evalState (printParser tk) (PrintState [] 0)
-      putStrLn "\n  -  -  - \n"
       case evalState (createSymTable tk)  initTableState of
-        Left errorStr -> putStrLn errorStr
-        Right symT -> putStr $ "TABLE:\n\n" ++ printSymTable symT
+        Left errorStr -> do
+          putStrLn "Errores de contexto:"
+          putStr errorStr
+        Right symT -> do
+          putStr $ evalState (printParser tk) (PrintState [] 0)
+          putStrLn "\n  -  -  - \n"
+          putStr $ "TABLE:\n\n" ++ printSymTable symT
       return()
