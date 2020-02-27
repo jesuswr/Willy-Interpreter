@@ -6,8 +6,7 @@
 Para este proyecto utilizamos el lenguaje de programación funcional Haskell. En específico para esta fase usamos la herramienta "Happy", que recibe el archivo "Parser.y" y genera el "Parser.hs" que usamos en nuestro main "Willy.hs" para hacer el análisis sintáctico. El main primero llama al Lexer de la entrega anterior y la lista de tokens que esta devuelve es suministrada al Parser para realizar el correspondiente análisis sintáctico. Luego con el AST (Árbol abstracto de sintaxis) generado por el Parser se procede a realizar el chequeo de contexto usando una tabla de símbolos.
 
 
-En el archivo Parser.y se define el nombre del parser (con este nombre se llama al parser desde el  
-main), el tipo de los token a recibir (el definido en la fase previa) y el nombre del error. En este caso son respectivamente: parse, Token y parseError. 
+En el archivo Parser.y se define el nombre del parser (con este nombre se llama al parser desde el main), el tipo de los token a recibir (el definido en la fase previa) y el nombre del error. En este caso son respectivamente: parse, Token y parseError. 
 
 
 Luego se definen las palabras asociadas a cada token de la entrega anterior. Estas se usaran en la definición de las gramáticas. Se definen de la siguiente forma:
