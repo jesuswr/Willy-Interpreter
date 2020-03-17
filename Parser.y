@@ -33,7 +33,7 @@ import qualified AST
     color                    { TKcolor _ }
     red                      { TKred _ }
     blue                     { TKblue _ }
-    mangenta                 { TKmangenta _ }
+    magenta                  { TKmagenta _ }
     cyan                     { TKcyan _ }
     green                    { TKgreen _ }
     yellow                   { TKyellow _ }
@@ -159,7 +159,7 @@ DIRECTION  : north                                      { $1 }
 COLORVAL :: { Token }
 COLORVAL   : red                                        { $1 }
            | blue                                       { $1 }
-           | mangenta                                   { $1 }
+           | magenta                                    { $1 }
            | cyan                                       { $1 }
            | green                                      { $1 }
            | yellow                                     { $1 }

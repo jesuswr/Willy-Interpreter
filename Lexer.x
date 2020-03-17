@@ -37,7 +37,7 @@ tokens :-
 <0>    color                       { pushTK TKcolor }
 <0>    red                         { pushTK TKred }
 <0>    blue                        { pushTK TKblue }
-<0>    mangenta                    { pushTK TKmangenta }
+<0>    magenta                     { pushTK TKmagenta }
 <0>    cyan                        { pushTK TKcyan }
 <0>    green                       { pushTK TKgreen }
 <0>    yellow                      { pushTK TKyellow }
@@ -141,7 +141,7 @@ data Token =
     TKcolor {tokenPos :: (Int,Int) }                     |
     TKred {tokenPos :: (Int,Int) }                       |
     TKblue {tokenPos :: (Int,Int) }                      |
-    TKmangenta {tokenPos :: (Int,Int) }                  |
+    TKmagenta {tokenPos :: (Int,Int) }                   |
     TKcyan {tokenPos :: (Int,Int) }                      |
     TKgreen {tokenPos :: (Int,Int) }                     |
     TKyellow {tokenPos :: (Int,Int) }                    |
@@ -235,7 +235,7 @@ instance Show Token where
     show ( TKcolor (l,c) )            = "TKcolor(linea=" ++ show l ++ ", columna=" ++ show c ++ ") "
     show ( TKred (l,c) )              = "red"
     show ( TKblue (l,c) )             = "blue"
-    show ( TKmangenta (l,c) )         = "mangenta"
+    show ( TKmagenta (l,c) )          = "magenta"
     show ( TKcyan (l,c) )             = "cyan"
     show ( TKgreen (l,c) )            = "green"
     show ( TKyellow (l,c) )           = "yellow"

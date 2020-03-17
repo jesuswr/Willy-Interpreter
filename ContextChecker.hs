@@ -268,7 +268,7 @@ insertWInst id (WORLDSIZE (l,c) cols rows)     = do
       put(MySymState symT stck (em:err) nB)
     otherwise -> 
       case getWSize id symT of
-        (1,1)     -> do
+        (-1,-1)     -> do
           updWorldSize id (cols',rows')
         otherwise -> do
           put(MySymState symT stck (em':err) nB)
@@ -572,7 +572,7 @@ validTaskTest (LOOKWEST _ ) = return ()
 insertWorld :: Pos -> String -> MyStateM ()
 insertWorld p id = do
   (MySymState symT (st:sts) err nB ) <- get
-  let val      = World p id st (nB+1) Hash.empty (1,1) 1 [] (1,1) "north" None
+  let val      = World p id st (nB+1) Hash.empty (1,1) 1 [] (-1,-1) "north" None
   insToTable id val
   pushScope
 
@@ -635,7 +635,9 @@ checkWall x1 y1 x2 y2 dir worldId symT
   | dir == "west"  && (x1 < x2 || y2 /= y1)         = 2 -- the direction is wrong
   | not $ clearForWall x1 y1 x2 y2 dir worldId symT = 3 -- theres something in the cell
   | otherwise                                       = 0 -- no problem
-  where (xlim,ylim) = getWSize worldId symT
+  where (xlim,ylim) = case getWSize worldId symT of
+                           (-1,-1) -> (1,1)
+                           (x,y) -> (x,y)
 
 
 -- Receives the x and y start coordinates and end coordinates of the wall,
@@ -695,7 +697,9 @@ checkPlaceAt worldId objId (col,row) symT scope
   | not $ cellWithoutWall col row worldId symT = 5 -- theres a wall in the cell
   | col*row == 0                               = 6 -- cant place objects at col or row 0
   | otherwise                                  = 0 -- no problem
-  where (colLim,rowLim) = getWSize worldId symT
+  where (colLim,rowLim) = case getWSize worldId symT of
+                               (-1,-1) -> (1,1)
+                               (x,y) -> (x,y)
         notExists = case Hash.lookup objId symT of
           Nothing -> True
           _       -> False
@@ -827,7 +831,9 @@ validStart wId (col,row) symT
   | colLim < col || rowLim < row           = 2 -- the position is out of the world
   | not $ cellWithoutWall col row wId symT = 3 -- there is a wall in that position
   | otherwise                              = 0 -- no problem
-  where (colLim,rowLim) = getWSize wId symT
+  where (colLim,rowLim) = case getWSize wId symT of
+                               (-1,-1) -> (1,1)
+                               (x,y) -> (x,y)
 
 
 -- Receives the world id, the position and the direction of willy and 
@@ -853,7 +859,9 @@ validTest wId (WILLYISAT (l,c) col row) symT stck
   where
     col' = getValue col
     row' = getValue row
-    (colLim,rowLim) = getWSize wId symT
+    (colLim,rowLim) = case getWSize wId symT of
+                           (-1,-1) -> (1,1)
+                           (x,y) -> (x,y)
 
 validTest wId (OBJECTSIN (l,c) n oId) symT stck
   | not $ existId oId' symT stck isTrue   = 3 -- the id doesnt exist
@@ -872,7 +880,9 @@ validTest wId (OBJECTSAT (l,c) n oId col row) symT stck
   where
     col'            = getValue col
     row'            = getValue row
-    (colLim,rowLim) = getWSize wId symT
+    (colLim,rowLim) = case getWSize wId symT of
+                           (-1,-1) -> (1,1)
+                           (x,y) -> (x,y) 
     n'              = getValue n
     oId'            = getStr oId
 
