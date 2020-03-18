@@ -40,6 +40,10 @@ insertBlock (WORLD (l,c) (TKId p s) instrs) = do
     False -> do 
       insertWorld (l,c) s
       insertWIBlock s instrs
+      case getWSize s symT of
+        (-1,-1) -> do updWorldSize s (1,1)
+                      return ()
+        otherwise -> return ()
       popScope
       (MySymState symT stck err nB ) <- get
       case worldHasFG s symT of 
