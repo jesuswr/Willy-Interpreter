@@ -1,6 +1,5 @@
-willy: Lexer Parser Willy.hs ContextChecker.hs AST.hs PrintParser.hs PrintSymTable.hs SymTable.hs
+willy: Willy.hs ContextChecker.hs AST.hs PrintParser.hs PrintSymTable.hs SymTable.hs RunTask2.hs
 	ghc --make Willy.hs -o willy
-	mv ./willy $$HOME/bin
 
 Lexer: Lexer.x
 	alex Lexer.x

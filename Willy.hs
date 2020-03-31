@@ -20,6 +20,7 @@ import PrintSymTable
 import Control.Monad.State
 import SymTable
 import ContextChecker
+import RunTask2
 import qualified Data.Map as Hash
 
 --Main function
@@ -29,18 +30,21 @@ main = do
         [] -> do putStr ( "Archivo a Interpretar: " )
                  hFlush stdout
                  filePath <- getLine
-                 if (length $ words filePath) > 1 then do wrongFormatInput
-                 else processFile filePath
-        [filePath] -> processFile filePath
+                 putStr ( "Tarea a ejecutar: " )
+                 hFlush stdout
+                 taskName <- getLine
+                 if (length $ words filePath) > 1 || (length $ words taskName) > 1 then do wrongFormatInput
+                 else processFile filePath filePath
+        [filePath, taskName] -> processFile filePath taskName
         _ -> wrongFormatInput
     
 -- Check if file exist and if so then run the project with that file
-processFile :: FilePath -> IO ()
-processFile filePath = do 
+processFile :: FilePath -> String -> IO ()
+processFile filePath taskName = do 
   fileExists <- doesFileExist filePath
   if fileExists then do 
     str <- readFile filePath
-    runProject (str)
+    runProject str taskName
     return ()
   else do 
     putStrLn ( "Imposible abrir el archivo " ++ show filePath )
@@ -54,19 +58,20 @@ wrongFormatInput = do
 
 -- Pass the string that represents the program to interpret to the scanner 
 -- and show the resuts
-runProject :: String -> IO ()
-runProject str = 
+runProject :: String -> String -> IO ()
+runProject str taskName = 
   case scanner str of
     Left s -> putStr s
     Right toks -> do 
       let tk = reverse $ parse toks
       let initTableState = MySymState Hash.empty [0] [] 0
-      case evalState (createSymTable tk)  initTableState of
-        Left errorStr -> do
-          putStrLn "Errores de contexto:"
-          putStr errorStr
-        Right symT -> do
-          putStr $ evalState (printParser tk) (PrintState [] 0)
-          putStrLn "\n  -  -  - \n"
-          putStr $ "TABLE:\n\n" ++ printSymTable symT
+      --case evalState (createSymTable tk)  initTableState of
+      --  Left errorStr -> do
+      --    putStrLn "Errores de contexto:"
+      --    putStr errorStr
+      --  Right symT -> do
+      --    putStr $ evalState (printParser tk) (PrintState [] 0)
+      --    putStrLn "\n  -  -  - \n"
+      --    putStr $ "TABLE:\n\n" ++ printSymTable symT
+      runStateT (runTask taskName tk) initTableState
       return()

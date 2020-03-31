@@ -68,5 +68,5 @@ type MyStateM a = StateT MySymState IO a
 
 
 -- para hacer cosas de IO en StateT
-io :: IO a -> StateM a
+io :: IO a -> MyStateM a
 io = liftIO

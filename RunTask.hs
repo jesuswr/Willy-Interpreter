@@ -6,26 +6,28 @@ import AST
 import Lexer
 import Control.Monad.State
 import Control.Monad.Trans
-import qualified Data.Map as Hash
 import SymTable
+import ContextChecker
+import qualified Data.Map as Hash
 
 
 
-runTask :: String -> [BLOCK] -> MyStateM (Either String Int)
+runTask :: String -> [BLOCK] -> MyStateM (Either String SymTable)
 runTask taskId [] = return $ Left ("No se encontro la Tarea " ++ taskId)
 runTask taskId blocks = do 
   --let initTableState = MySymState Hash.empty [0] [] 0 -- esto se manda desde el main
-  case createSymTable blocks of
-    Left errorStr -> do
-      return $ Left $ "Errores de contexto:\n" ++ errorStr
-    Right symT -> do
-      return $ evalTask taskId blocks 
+  --case createSymTable blocks of
+  --  Left errorStr -> do
+  --    return $ Left $ "Errores de contexto:\n" ++ errorStr
+  --  Right symT -> do
+  --    return $ evalTask taskId blocks 
+  createSymTable blocks
     
 
-evalTask :: String -> [BLOCK] -> MyStateM (Either String Int)
+evalTask :: String -> [BLOCK] -> MyStateM (Either String SymTable)
 evalTask taskId [] = return $ Left ("No se encontro la Tarea " ++ taskId)
 evalTask taskId (x:xs) = case x of
-  WOLRD{} -> evalTask taskId xs
+  WORLD{} -> evalTask taskId xs
   (TASK (l,c) (TKId tP tId) (TKId wP wId) tasks) -> do
     (MySymState symT stck err nB ) <- get
     let wSc = getWorldScope wId symT
@@ -38,14 +40,14 @@ evalTask taskId (x:xs) = case x of
     --popScope
                             
 
-runTaskInsts :: String -> [TASKINSTR] -> MyStateM (Either String Int)
+runTaskInsts :: String -> [TASKINSTR] -> MyStateM (Either String SymTable)
 runTaskInsts id [] = return (Right 0)
 runTaskInsts id (x:xs) =  do  -- duda, funciona: runTaskInst x >>= runTaskInsts xs
   case runTaskInst id x of
     Left str -> return $ Left str
     Right n -> runTaskInsts id xs
 
-runTaskInst :: String ->  TASKINSTR -> MyStateM (Either String Int)
+runTaskInst :: String ->  TASKINSTR -> MyStateM (Either String SymTable)
 runTaskInst id (IF (l,c) guard instr ) = do
   if evalTaskTest id guard
     then do
@@ -86,7 +88,7 @@ runTaskInst id thisInstr@(WHILE (l,c) guard instr) = do
         _ -> runTaskInst id thisInstr
     else popScope >> return (Right 0)
 
-runTaskInst (BEGIN (l,c) instrs) = do
+runTaskInst id (BEGIN (l,c) instrs) = do
   pushScope
   case runTaskInsts id instrs of
     Left str -> return $ Left str
@@ -113,32 +115,32 @@ runTaskInst id inst@(TURNRIGHT _) = do
   -- if mode == user enter then wait(enter) else return ()
   checkAndSimAPI  id inst -- call the API
 
-runTaskInst id inst@(PICK (l,c) (TKId _ id)) = do
+runTaskInst id inst@(PICK (l,c) (TKId _ objId)) = do
   -- if mode == X seconds then sleep else return ()
   -- if mode == user enter then wait(enter) else return ()
   checkAndSimAPI  id inst -- call the API
 
-runTaskInst id inst@(DROP (l,c) (TKId _ id)) = do
+runTaskInst id inst@(DROP (l,c) (TKId _ objId)) = do
   -- if mode == X seconds then sleep else return ()
   -- if mode == user enter then wait(enter) else return ()
   checkAndSimAPI  id inst -- call the API
 
-runTaskInst id inst@(SET (l,c) (TKId _ id)) = do
+runTaskInst id inst@(SET (l,c) (TKId _ objId)) = do
   -- if mode == X seconds then sleep else return ()
   -- if mode == user enter then wait(enter) else return ()
   checkAndSimAPI  id inst -- call the API
 
-runTaskInst id inst@(SETTO (l,c) (TKId _ id) bool) = do
+runTaskInst id inst@(SETTO (l,c) (TKId _ objId) bool) = do
   -- if mode == X seconds then sleep else return ()
   -- if mode == user enter then wait(enter) else return ()
   checkAndSimAPI  id inst -- call the API
 
-runTaskInst id inst@(CLEAR (l,c) (TKId _ id)) = do
+runTaskInst id inst@(CLEAR (l,c) (TKId _ objId)) = do
   -- if mode == X seconds then sleep else return ()
   -- if mode == user enter then wait(enter) else return ()
   checkAndSimAPI  id inst -- call the API
 
-runTaskInst id inst@(FLIP (l,c) (TKId _ id)) = do
+runTaskInst id inst@(FLIP (l,c) (TKId _ objId)) = do
   -- if mode == X seconds then sleep else return ()
   -- if mode == user enter then wait(enter) else return ()
   checkAndSimAPI  id inst -- call the API
@@ -147,7 +149,7 @@ runTaskInst id inst@(FLIP (l,c) (TKId _ id)) = do
 runTaskInst id (TERMINATE _) = return $ Left "TERMINATE" 
 
 -- Run the define block associated with the ID
-runTaskInst id (INSTRID (l,c) (TKId _ id)) = do
+runTaskInst id (INSTRID (l,c) (TKId _ objId)) = do
   (MySymState symT (scope:stck) err nB ) <- get
   case Hash.lookup id symT of -- search the define block in the table
     Just lst -> do 
@@ -263,3 +265,8 @@ checkClear id _ d = do
   case Hash.lookup newp grid of
     Just Wall -> return False
     otherwise -> return $ isInGrid sizeW newp
+
+
+
+io :: IO a -> MyStateM a
+io = liftIO 

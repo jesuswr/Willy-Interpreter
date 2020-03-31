@@ -24,3 +24,14 @@ move;
 if true then a; else begin move; move; end
 if perro then a; else move;
 end-task
+
+begin-task x on mimundo
+define a as 
+    define b as 
+        define c as
+        begin move; end
+a;
+move;
+if true then a; else begin move; move; end
+if perro then a; else move;
+end-task
