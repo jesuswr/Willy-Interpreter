@@ -3,6 +3,7 @@ World 100 100;
 Wall east from 2 2 to 10 2;
 Boolean mibool2 with initial value true;
 Boolean xd with initial value false;
+Goal perro is willy is at 10 10;
 Final goal is mibool2 and mibool2 or not xd;
 end-world
 
@@ -21,4 +22,5 @@ define a as
 a;
 move;
 if true then a; else begin move; move; end
+if perro then a; else move;
 end-task

@@ -14,6 +14,7 @@ module SymTable where
 import AST
 import Lexer
 import Control.Monad.State
+import Control.Monad.Trans
 import qualified Data.Map as Hash
 
 type Pos = (Int,Int)
@@ -63,4 +64,9 @@ type SymTable = Hash.Map String [SymValue]
 data MySymState = MySymState{ symTable :: SymTable , stack :: [Int] , error :: [String] 
                             , nBlock :: Int }
 
-type MyStateM a = State MySymState a
+type MyStateM a = StateT MySymState IO a
+
+
+-- para hacer cosas de IO en StateT
+io :: IO a -> StateM a
+io = liftIO

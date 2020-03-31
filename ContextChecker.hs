@@ -521,7 +521,7 @@ validTaskTest (TESTID (l,c) (TKId _ id)) = do
   case not $ existId id symT stck isTrue of
     True  -> put (MySymState symT stck (em1:err) nB)
     False ->
-      case existId id symT stck isBoolOrGuard of
+      case existId id symT stck isBoolOrGuard of  -- Goal se puede usar en Task?
         False -> put (MySymState symT stck (em2:err) nB)
         True  -> return()
   where 
@@ -633,8 +633,8 @@ checkWall :: Int -> Int -> Int -> Int -> String -> String -> SymTable -> Int
 checkWall x1 y1 x2 y2 dir worldId symT
   | x1 > xlim || x2 > xlim                          = 1 -- a cell is out of the world
   | y1 > ylim || y2 > ylim                          = 1 -- a cell is out of the world
-  | dir == "north" && (x1 /= x2 || y2 > y1)         = 2 -- the direction is wrong
-  | dir == "south" && (x1 /= x2 || y2 < y1)         = 2 -- the direction is wrong
+  | dir == "south" && (x1 /= x2 || y2 > y1)         = 2 -- the direction is wrong
+  | dir == "north" && (x1 /= x2 || y2 < y1)         = 2 -- the direction is wrong
   | dir == "east"  && (x1 > x2 || y2 /= y1)         = 2 -- the direction is wrong
   | dir == "west"  && (x1 < x2 || y2 /= y1)         = 2 -- the direction is wrong
   | not $ clearForWall x1 y1 x2 y2 dir worldId symT = 3 -- theres something in the cell
@@ -651,8 +651,8 @@ clearForWall :: Int -> Int -> Int -> Int -> String -> String -> SymTable -> Bool
 clearForWall x y finalx finaly dir worldId symT
   | not $ emptyCell x y worldId symT = False
   | x == finalx && y == finaly       = True
-  | dir == "north"         = clearForWall x (y-1) finalx finaly dir worldId symT
-  | dir == "south"         = clearForWall x (y+1) finalx finaly dir worldId symT
+  | dir == "south"         = clearForWall x (y-1) finalx finaly dir worldId symT
+  | dir == "north"         = clearForWall x (y+1) finalx finaly dir worldId symT
   | dir == "east"          = clearForWall (x+1) y finalx finaly dir worldId symT
   | dir == "west"          = clearForWall (x-1) y finalx finaly dir worldId symT
 
@@ -682,8 +682,8 @@ updWorldWall worldId x1 y1 x2 y2 dir = do
       let newWorld =  oldWorld{desc=(Hash.insert (x1,y1) (Wall) $ desc oldWorld)} 
       put (MySymState (Hash.insert worldId (updateWListVal newWorld listVal) symT) stck err nB)
       if (x1==x2 && y1==y2) then do return ()
-      else if (dir == "north") then updWorldWall worldId x1 (y1-1) x2 y2 dir
-      else if (dir == "south") then updWorldWall worldId x1 (y1+1) x2 y2 dir
+      else if (dir == "south") then updWorldWall worldId x1 (y1-1) x2 y2 dir
+      else if (dir == "north") then updWorldWall worldId x1 (y1+1) x2 y2 dir
       else if (dir == "east" ) then updWorldWall worldId (x1+1) y1 x2 y2 dir
       else                          updWorldWall worldId (x1-1) y1 x2 y2 dir
     _  -> return ()
