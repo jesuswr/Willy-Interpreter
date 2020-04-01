@@ -617,13 +617,31 @@ updWorldSize id (c,r) = do
       put(MySymState (Hash.insert id (updateWListVal newWorld listVal) symT) stck err nB)
       
 
--- Gets the id of the world and the table and returns the size of the world
+-- Gets the id of the world and the table and startreturns the size of the world
 getWSize :: String -> SymTable -> (Int,Int)
 getWSize id symT = 
   case Hash.lookup id symT of
     Just listVal -> 
       size $ filter isWorld listVal !! 0
     _ -> (1,1)
+
+
+-- Gets the id of the world and the table and startreturns the starting position
+getWStartPos :: String -> SymTable -> Pos
+getWStartPos id symT = 
+  case Hash.lookup id symT of
+    Just listVal -> 
+      willyIsAt $ filter isWorld listVal !! 0
+    _ -> (-1,-1)
+
+
+-- Gets the id of the world and the table and startreturns Willy's current direction
+getWDirection :: String -> SymTable -> String
+getWDirection id symT = 
+  case Hash.lookup id symT of
+    Just listVal -> 
+      willyDirection $ filter isWorld listVal !! 0
+    _ -> "north"
 
 
 -- Receives the x and y start coordinates and end coordinates of the wall,
@@ -765,6 +783,30 @@ checkPlaceIn worldId objId n symT scope
           Nothing -> True
           _       -> False
 
+-- Receives the world id, object id, the number of objects and the cell
+-- to place them and it takes one object from that cell
+pickObject :: String -> String -> Pos -> MyStateM()
+pickObject worldId objId (c,r) = do
+  (MySymState symT stck err nB ) <- get
+  case Hash.lookup worldId symT of
+    Just listVal -> do
+      let world = filter isWorld listVal !! 0
+      case Hash.lookup (c,r) $ desc world of
+        Just (Objects map) -> -- there already are objects in the cell
+          case Hash.lookup objId map of
+            Just m -> do -- there already are objects of the same type in the cell
+              if m == 0 then do
+                Prelude.error "El objeto a recoger no esta en la celda"
+              else do
+                let v  = Hash.insert objId (m-1) map
+                let v' = Hash.insert (c,r) (Objects v) $ desc world
+                let newWorld = world{desc=v'}
+                put(MySymState (Hash.insert worldId (updateWListVal newWorld listVal) symT) stck err nB)
+            Nothing -> do -- there are not objects of the same type in the cell
+              Prelude.error "El objeto a recoger no esta en la celda"
+        Nothing -> do -- there are not objects in the cell
+          Prelude.error "El objeto a recoger no esta en la celda"
+
 
 -- Receives the world id and the table and returns the capacity of 
 -- the basket of that world
@@ -776,6 +818,11 @@ basketCap wId symT =
       basketSize world - (length $ objectsInB world)
     otherwise -> 0 -- Este nunca pasa
 
+
+-- Receives the world id and the table and returns if the basket if full
+isBasketFull :: String -> SymTable -> Bool
+isBasketFull wId symT = if basketCap wId symT == 0 then True else False
+  
 
 -- Receives the world id and the table and returns the scope number of that world
 getWorldScope :: String -> SymTable -> Int
@@ -849,6 +896,18 @@ updStartPos wId pos dir = do
     Just listVal -> do
       let oldWorld = filter isWorld listVal !! 0
       let newWorld = oldWorld{willyIsAt = pos, willyDirection = dir}
+      put(MySymState (Hash.insert wId (updateWListVal newWorld listVal) symT) stck err nB)
+    Nothing -> return() 
+
+-- Receives the world id, the position and the direction of willy and 
+-- updates willy start position and direction
+updDirection :: String -> String -> MyStateM()
+updDirection wId dir = do
+  (MySymState symT stck err nB ) <- get
+  case Hash.lookup wId symT of
+    Just listVal -> do
+      let oldWorld = filter isWorld listVal !! 0
+      let newWorld = oldWorld{willyDirection = dir}
       put(MySymState (Hash.insert wId (updateWListVal newWorld listVal) symT) stck err nB)
     Nothing -> return() 
 
@@ -983,3 +1042,5 @@ updateWListVal :: SymValue -> [SymValue] -> [SymValue]
 updateWListVal newWorld (val:vals)
   | isWorld val = newWorld:vals
   | otherwise    = val:updateWListVal newWorld vals
+
+
