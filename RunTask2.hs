@@ -8,23 +8,18 @@ import SymTable
 import ContextChecker
 import PrintSymTable
 import qualified Data.Map as Hash
+import System.Exit
 
 
 runTask :: String -> [BLOCK] -> MyStateM ()
 runTask taskId [] = Prelude.error "No hay tareas ni mundos"
 runTask taskId blocks = do 
-  --let initTableState = MySymState Hash.empty [0] [] 0 -- esto se manda desde el main
-  --case createSymTable blocks of
-  --  Left errorStr -> do
-  --    return $ Left $ "Errores de contexto:\n" ++ errorStr
-  --  Right symT -> do
-  --    return $ evalTask taskId blocks 
   createSymTable blocks
   (MySymState symT stck err nB ) <- get
   case err of
     []   -> do
-      io $ putStr $ printSymTable symT
-      io $ putStrLn "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa\n\n\n"
+      io $ putStr $ printSymTable symT -- QUITAR LUEGO
+      io $ putStrLn "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa\n\n\n" -- QUITAR LUEGO
       evalTask taskId blocks
     str  -> 
       io $ putStrLn $ unlines $ reverse err
@@ -40,7 +35,7 @@ evalTask taskId (x:xs) = case x of
       let wSc = getWorldScope wId symT
       put(MySymState symT (wSc:stck) err nB) -- push world scope. From this time there is only one world in stack
       pushScope -- push this task  scope. The task is already in symT.
-      io $ putStrLn $ wId ++ " " ++ tId ++ " " ++ taskId 
+      io $ putStrLn $ wId ++ " " ++ tId ++ " " ++ taskId -- QUITAR LUEGO
       runTaskInsts wId tasks
     else evalTask taskId xs
 
@@ -54,10 +49,10 @@ runTaskInsts id (x:xs) =  do  -- duda, funciona: runTaskInst x >>= runTaskInsts 
 
 runTaskInst :: String ->  TASKINSTR -> MyStateM ()
 runTaskInst id (IF (l,c) guard instr) = do
-  io $ putStrLn "Voy a un if"
+  io $ putStrLn "Voy a un if" -- QUITAR LUEGO
   valid <- evalTaskTest id guard
-  if True then do
-    io $ putStrLn "Entre en un if "
+  if valid then do
+    io $ putStrLn "Entre en un if "-- QUITAR LUEGO
     pushScope 
     runTaskInst id instr
     popScope
@@ -65,21 +60,21 @@ runTaskInst id (IF (l,c) guard instr) = do
     return ()
 
 runTaskInst id (IFELSE (l,c) guard instr1 instr2) = do
-  io $ putStrLn "Voy a un if"
+  io $ putStrLn "Voy a un if"-- QUITAR LUEGO
   valid <- evalTaskTest id guard
   if valid then do
-    io $ putStrLn "Entre en un if "
+    io $ putStrLn "Entre en un if "-- QUITAR LUEGO
     pushScope
     runTaskInst id instr1
     popScope
   else do
-    io $ putStrLn "Entre en un else "
+    io $ putStrLn "Entre en un else "-- QUITAR LUEGO
     pushScope
     runTaskInst id instr2
     popScope
 
 runTaskInst id (REPEAT (l,c) n instr) = do
-  io $ putStrLn "Voy a un repeat "
+  io $ putStrLn "Voy a un repeat "-- QUITAR LUEGO
   pushScope
   runRepeat id (l,c) n' instr
   popScope
@@ -87,7 +82,7 @@ runTaskInst id (REPEAT (l,c) n instr) = do
     n' = getValue n
 
 runTaskInst id thisInstr@(WHILE (l,c) guard instr) = do
-  io $ putStrLn "Voy a un while"
+  io $ putStrLn "Voy a un while"-- QUITAR LUEGO
   pushScope
   runWhile id (l,c) guard instr
   popScope
@@ -98,7 +93,7 @@ runTaskInst id (BEGIN (l,c) instrs) = do
   popScope
 
 runTaskInst id (DEFINE (l,c) (TKId _ tId) instr) = do
-  io $ putStrLn "Voy a definir algo"
+  io $ putStrLn "Voy a definir algo"-- QUITAR LUEGO
   (MySymState symT (st:stck) err nB ) <- get
   let val = Instruction (l,c) id st (nB+1) instr
   pushScope
@@ -110,7 +105,7 @@ runTaskInst id inst@(MOVE _) = do
   let p = getWStartPos id symT
   let d = getWDirection id symT
   let newP = moveInDir p d
-  io $ putStrLn $ "cambiare la pos de willy " ++ show p
+  io $ putStrLn $ "cambiare la pos de willy " ++ show p-- QUITAR LUEGO
   case validStart id newP symT of
     1 -> Prelude.error "No se puede salir del mapa"
     2 -> Prelude.error "No se puede salir del mapa"
@@ -119,33 +114,33 @@ runTaskInst id inst@(MOVE _) = do
       updStartPos id newP d
       (MySymState symT (st:stck) err nB ) <- get
       let p2 = getWStartPos id symT
-      io $ putStrLn $ "ahora la pos de willy es " ++ show p2
+      io $ putStrLn $ "ahora la pos de willy es " ++ show p2-- QUITAR LUEGO
       return ()
 
 runTaskInst id inst@(TURNLEFT _) = do
   (MySymState symT (st:stck) err nB ) <- get
   let d = getWDirection id symT
-  io $ putStrLn $ "veo hacia el " ++ d ++ " " ++ show inst
+  io $ putStrLn $ "veo hacia el " ++ d ++ " " ++ show inst-- QUITAR LUEGO
   let newD = changeDirection d inst
   updDirection id newD
-  (MySymState symT (st:stck) err nB ) <- get
-  let d = getWDirection id symT
-  io $ putStrLn $ d
+  (MySymState symT (st:stck) err nB ) <- get-- QUITAR LUEGO
+  let d = getWDirection id symT-- QUITAR LUEGO
+  io $ putStrLn $ d-- QUITAR LUEGO
 
 runTaskInst id inst@(TURNRIGHT _) = do
   (MySymState symT (st:stck) err nB ) <- get
   let d = getWDirection id symT
-  io $ putStrLn $ "veo hacia el " ++ d ++ " " ++ show inst
+  io $ putStrLn $ "veo hacia el " ++ d ++ " " ++ show inst-- QUITAR LUEGO
   let newD = changeDirection d inst
   updDirection id newD
-  (MySymState symT (st:stck) err nB ) <- get
-  let d = getWDirection id symT
-  io $ putStrLn $ d
+  (MySymState symT (st:stck) err nB ) <- get-- QUITAR LUEGO
+  let d = getWDirection id symT-- QUITAR LUEGO
+  io $ putStrLn $ d-- QUITAR LUEGO
 
 runTaskInst id inst@(PICK (l,c) (TKId _ objId)) = do
   (MySymState symT (st:stck) err nB ) <- get
-  io $ putStrLn $ "Intentare recoger " ++ objId
-  io $ putStrLn $ show (basketCap id symT) ++ " haaaaa"
+  io $ putStrLn $ "Intentare recoger " ++ objId-- QUITAR LUEGO
+  io $ putStrLn $ show (basketCap id symT) ++ " haaaaa"-- QUITAR LUEGO
   case not $ isBasketFull id symT of
     True -> do
       let pos = getWStartPos id symT
@@ -155,25 +150,162 @@ runTaskInst id inst@(PICK (l,c) (TKId _ objId)) = do
       Prelude.error "No hay suficiente espacio en basket"
 
 runTaskInst id inst@(DROP (l,c) (TKId _ objId)) = do
-  io $ putStrLn "Dropear un objeto"
+  io $ putStrLn "Dropear un objeto"-- QUITAR LUEGO
   (MySymState symT (st:stck) err nB ) <- get
   let pos = getWStartPos id symT
   dropObject id objId
   placeObject id objId 1 pos
 
+runTaskInst id inst@(SET (l,c) (TKId _ boolId)) = do
+  return()
 
+runTaskInst id inst@(SETTO (l,c) (TKId _ boolId) bool) = do
+  return()
 
-runTaskInst _ _ = return () -- Quitar este al final
+runTaskInst id inst@(CLEAR (l,c) (TKId _ boolId)) = do
+  return()
+
+runTaskInst id inst@(FLIP (l,c) (TKId _ boolId)) = do
+  return()
+
+runTaskInst id (TERMINATE _) = do
+  io $ exitWith $ ExitSuccess
+
+runTaskInst id (INSTRID (l,c) (TKId _ objId)) = do
+  return() 
 
 
 evalTaskTest :: String -> TEST -> MyStateM (Bool)
-evalTaskTest _ _ = return (True)
+evalTaskTest id (TESTAND (l,c) left right) = do
+  l <- evalTaskTest id left
+  r <- evalTaskTest id right
+  return (l && r)
 
+evalTaskTest id (TESTOR (l,c) left right) = do
+  l <- evalTaskTest id left
+  r <- evalTaskTest id right
+  return (l || r)
+
+evalTaskTest id (TESTNOT (l,c) exp) = do
+  e <- evalTaskTest id exp
+  return (not e)
+
+evalTaskTest wid (TESTID (l,c) (TKId _ id)) = do
+  return (True)
+
+evalTaskTest wid (FOUND (l,c) (TKId _ id)) = do
+  (MySymState symT (st:stck) err nB ) <- get
+  let world = getWorld wid symT
+  let (x,y) = willyIsAt world
+  let grid = desc world
+  case Hash.lookup (x,y) grid of
+    Just (Objects obj) -> case Hash.lookup id obj of
+      Just x  -> return (x > 0) -- Found an obj of type id
+      Nothing -> return (False)
+    Just Wall -> return (False)
+    Nothing -> return (False)
+
+evalTaskTest wid (CARRYING (l,c) (TKId _ id)) = do
+  (MySymState symT (st:stck) err nB ) <- get
+  let world = getWorld wid symT
+  let objs  = objectsInB world
+  return $ elem id objs
+
+evalTaskTest id (TESTTOF _ bool) = do
+  io $ print bool-- QUITAR LUEGO
+  return $ getBool bool
+
+evalTaskTest id test@(FRONTCLEAR _ ) = do
+  (MySymState symT (st:stck) err nB ) <- get
+  let world = getWorld id symT
+  let pos = moveInDir (willyIsAt world) (willyDirection world)
+  io $ putStrLn $ "Voy a revisar la casilla " ++ show pos-- QUITAR LUEGO
+  case validStart id pos symT of
+    0 -> return (True)
+    _ -> return (False)
+
+evalTaskTest id test@(LEFTCLEAR _ ) = do
+  (MySymState symT (st:stck) err nB ) <- get
+  let world = getWorld id symT
+  let newD = changeDirection (willyDirection world) (TURNLEFT (1,1))
+  let pos = moveInDir (willyIsAt world) newD
+  io $ putStrLn $ "Voy a revisar la casilla " ++ show pos-- QUITAR LUEGO
+  case validStart id pos symT of
+    0 -> return (True)
+    _ -> return (False)
+
+evalTaskTest id test@(RIGHTCLEAR _ ) = do
+  (MySymState symT (st:stck) err nB ) <- get
+  let world = getWorld id symT
+  let newD = changeDirection (willyDirection world) (TURNRIGHT (1,1))
+  let pos = moveInDir (willyIsAt world) newD
+  io $ putStrLn $ "Voy a revisar la casilla " ++ show pos-- QUITAR LUEGO
+  case validStart id pos symT of
+    0 -> return (True)
+    _ -> return (False)
+
+evalTaskTest id (LOOKNORTH _ ) = do
+  (MySymState symT (st:stck) err nB ) <- get
+  let world = getWorld id symT
+  let dir = willyDirection world
+  return (dir == "north")
+
+evalTaskTest id (LOOKEAST _ ) = do
+  (MySymState symT (st:stck) err nB ) <- get
+  let world = getWorld id symT
+  let dir = willyDirection world
+  return (dir == "east")
+
+evalTaskTest id (LOOKSOUTH _ ) = do
+  (MySymState symT (st:stck) err nB ) <- get
+  let world = getWorld id symT
+  let dir = willyDirection world
+  return (dir == "south")
+
+evalTaskTest id (LOOKWEST _ ) = do
+  (MySymState symT (st:stck) err nB ) <- get
+  let world = getWorld id symT
+  let dir = willyDirection world
+  return (dir == "west")
+
+
+evalFinalGoal :: String -> FINALGOAL -> MyStateM (Bool)
+evalFinalGoal _ _ = return (True)
+
+
+evalGoal :: String -> GOALTEST -> MyStateM (Bool)
+evalGoal wId (WILLYISAT (l,c) col row ) = do
+  (MySymState symT (st:stck) err nB ) <- get
+  let world = getWorld wId symT
+  let pos = willyIsAt world
+  return (pos == (c,r))
+  where
+    c = getValue col
+    r = getValue row
+
+evalGoal wId (OBJECTSIN (l,c) n oId) = do
+  (MySymState symT (st:stck) err nB ) <- get
+  let world = getWorld wId symT
+  let nObjs = length $ filter (\x -> x == oId') (objectsInB world)
+  return (n' == nObjs)
+  where 
+    n'   = getValue n
+    oId' = getStr oId
+
+evalGoal wId (OBJECTSAT (l,c) n oId col row) = do
+  (MySymState symT (st:stck) err nB ) <- get
+  let m = numberOfObjects wId oId' (c,r) symT
+  return (m >= n')
+  where 
+    n'   = getValue n
+    oId' = getStr oId
+    c    = getValue col
+    r    = getValue row
 
 runRepeat :: String -> Pos -> Int -> TASKINSTR -> MyStateM ()
 runRepeat _ _ 0 _ = return ()
 runRepeat id (l,c) n task = do
-  io $ putStrLn "Entre en un loop del repeat "
+  io $ putStrLn "Entre en un loop del repeat "-- QUITAR LUEGO
   runTaskInst id task
   runRepeat id (l,c) (n-1) task
 
@@ -182,18 +314,18 @@ runWhile :: String -> Pos -> TEST -> TASKINSTR -> MyStateM ()
 runWhile id (l,c) guard inst = do
   valid <- evalTaskTest id guard
   if valid then do
-    io $ putStrLn "Sigo en el while"
+    io $ putStrLn "Sigo en el while" -- QUITAR LUEGO
     runTaskInst id inst
     runWhile id (l,c) guard inst
   else
     return ()
 
-moveInDir :: Pos -> String -> Pos
+moveInDir :: Pos -> String -> Pos -- No se si las direcciones funcionan asi
 moveInDir (r,c) dir = case dir of
-  "north" -> (r+1,c)
-  "south" -> (r-1,c)
-  "west"  -> (r,c-1)
-  "east"  -> (r,c+1)
+  "north" -> (r,c+1)
+  "south" -> (r,c-1)
+  "west"  -> (r-1,c)
+  "east"  -> (r+1,c)
 
 
 changeDirection :: String -> TASKINSTR -> String
@@ -231,4 +363,21 @@ dropObject wId objId = do
       | otherwise = x:(dropObject' oId xs)
 
 
+getWorld :: String -> SymTable -> SymValue
+getWorld id symT = case Hash.lookup id symT of 
+  Just listVal -> filter isWorld listVal !! 0
+  otherwise -> World (1,1) id 0 0 Hash.empty (1,1) 1 [] (-1,-1) "north" None
 
+
+numberOfObjects :: String -> String -> Pos -> SymTable -> Int
+numberOfObjects worldId objId (c,r) symT = do
+  case Hash.lookup worldId symT of
+    Just listVal -> do
+      let world = filter isWorld listVal !! 0
+      case Hash.lookup (c,r) $ desc world of
+        Just (Objects map) -> -- there already are objects in the cell
+          case Hash.lookup objId map of
+            Just m -> m
+            Nothing -> 0
+        Nothing -> 0
+    Nothing -> 0

@@ -1,14 +1,18 @@
 begin-world mimundo
 World 100 100;
 Wall east from 2 50 to 100 50;
+Wall east from 20 21 to 20 21;
+
 Boolean mibool2 with initial value true;
 Boolean xd with initial value false;
 Goal perro is willy is at 10 10;
 Final goal is mibool2 and mibool2 or not xd;
 Start at 20 20 heading north;
 Object-type miobj of color red;
+Object-type miobj2 of color red;
 Place 5 of miobj at 20 20;
 Basket of capacity 5;
+Goal migoal is willy is at 1 1;
 end-world
 
 
@@ -25,6 +29,10 @@ if perro then a; else move;
 end-task
 
 begin-task x on mimundo
+if looking-south then move;
+end-task
+
+begin-task xx on mimundo
 pick miobj;
 pick miobj;
 pick miobj;
