@@ -34,7 +34,7 @@ main = do
                  hFlush stdout
                  taskName <- getLine
                  if (length $ words filePath) > 1 || (length $ words taskName) > 1 then do wrongFormatInput
-                 else processFile filePath filePath
+                 else processFile filePath taskName
         [filePath, taskName] -> processFile filePath taskName
         _ -> wrongFormatInput
     

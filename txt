@@ -15,6 +15,30 @@ Basket of capacity 5;
 Goal migoal is willy is at 1 1;
 end-world
 
+begin-task otraTask on mimundo
+
+turn-right;
+
+define a as move;
+
+a;
+
+define b as
+	begin
+    define c as move;
+    c;
+    if xd then move; else
+        begin set xd; b; end
+    end
+
+b;
+
+set xd to false;
+set xd to true;
+clear xd;
+flip xd;
+
+end-task
 
 
 begin-task mitask2 on mimundo

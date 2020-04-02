@@ -21,7 +21,8 @@ runTask taskId blocks = do
       io $ putStr $ printSymTable symT -- QUITAR LUEGO
       io $ putStrLn "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa\n\n\n" -- QUITAR LUEGO
       evalTask taskId blocks
-    str  -> 
+    str  -> do
+      io $ putStrLn "\nErrores de contexto:\n"
       io $ putStrLn $ unlines $ reverse err
 
 
@@ -63,7 +64,7 @@ runTaskInst id (IFELSE (l,c) guard instr1 instr2) = do
   io $ putStrLn "Voy a un if"-- QUITAR LUEGO
   valid <- evalTaskTest id guard
   if valid then do
-    io $ putStrLn "Entre en un if "-- QUITAR LUEGO
+    io $ putStrLn "Entre en un if (e)"-- QUITAR LUEGO
     pushScope
     runTaskInst id instr1
     popScope
@@ -156,23 +157,53 @@ runTaskInst id inst@(DROP (l,c) (TKId _ objId)) = do
   dropObject id objId
   placeObject id objId 1 pos
 
-runTaskInst id inst@(SET (l,c) (TKId _ boolId)) = do
-  return()
+runTaskInst id inst@(SET p (TKId _ boolId)) =
+  runTaskInst id (SETTO p (TKId p boolId) (TKtrue p))
 
-runTaskInst id inst@(SETTO (l,c) (TKId _ boolId) bool) = do
-  return()
+runTaskInst id inst@(SETTO p (TKId _ boolId) bool) = do
+  (MySymState symT stck err nB ) <- get
+  case Hash.lookup boolId symT of -- search the bool variable in the table
+    Just lst -> do
+      let scope = getWorldScope id symT
+      let boolLst = filter isBoolean lst
+      let oldBool = filter (\x -> defBlock x == scope) boolLst !! 0
+      let newBool = oldBool{value= getBool bool}
+      io $ print "valores previos y posteriores del bool : "
+      io $ print oldBool
+      io $ print newBool
+      put(MySymState (Hash.insert boolId (updateBoolLst scope newBool lst) symT) stck err nB)
 
-runTaskInst id inst@(CLEAR (l,c) (TKId _ boolId)) = do
-  return()
+runTaskInst id inst@(CLEAR p (TKId _ boolId)) =
+  runTaskInst id (SETTO p (TKId p boolId) (TKfalse p))
 
-runTaskInst id inst@(FLIP (l,c) (TKId _ boolId)) = do
-  return()
+runTaskInst id inst@(FLIP p (TKId _ boolId)) = do
+  (MySymState symT stck err nB ) <- get
+  case Hash.lookup boolId symT of -- search the bool variable in the table
+    Just lst -> do
+      let scope = getWorldScope id symT
+      let boolLst = filter isBoolean lst
+      let oldBool = filter (\x -> defBlock x == scope) boolLst !! 0
+      let boolVal = value oldBool
+      let newBool = oldBool{value= not boolVal}
+      io $ print "jeje : "
+      io $ print oldBool
+      io $ print newBool
+      put(MySymState (Hash.insert boolId (updateBoolLst scope newBool lst) symT) stck err nB)
+
 
 runTaskInst id (TERMINATE _) = do
   io $ exitWith $ ExitSuccess
 
 runTaskInst id (INSTRID (l,c) (TKId _ objId)) = do
-  return() 
+  (MySymState symT (scope:stck) err nB ) <- get
+  case Hash.lookup objId symT of -- search the define block in the table
+    Just lst -> do 
+      let defLst = filter isInstruction lst
+      let defInScope = filter (\x -> defBlock x <= scope) defLst
+      let defInst = foldr1 (\x y -> if defBlock x > defBlock y then x else y) defInScope
+      pushScope
+      runTaskInst id $ inst defInst
+      popScope
 
 
 evalTaskTest :: String -> TEST -> MyStateM (Bool)
@@ -191,7 +222,21 @@ evalTaskTest id (TESTNOT (l,c) exp) = do
   return (not e)
 
 evalTaskTest wid (TESTID (l,c) (TKId _ id)) = do
-  return (True)
+  (MySymState symT stck err nB ) <- get
+  io $ putStrLn (id ++ " este es el id que jode")
+  case Hash.lookup id symT of -- search the bool variable in the table
+    Just lst -> do
+      let scope = getWorldScope wid symT          
+      let boolLst = filter isBoolOrGuard lst
+      io $ print "errsrsrsr"
+      io $ print scope
+      io $ print boolLst
+      let boolVar = filter (\x -> defBlock x == scope) boolLst !! 0
+      case boolVar of
+        WBoolean{} -> return $ value boolVar
+        Goal{} -> evalGoal wid $ test boolVar
+  where 
+    isBoolOrGuard x = isBoolean x || isGoal x
 
 evalTaskTest wid (FOUND (l,c) (TKId _ id)) = do
   (MySymState symT (st:stck) err nB ) <- get
@@ -215,67 +260,74 @@ evalTaskTest id (TESTTOF _ bool) = do
   io $ print bool-- QUITAR LUEGO
   return $ getBool bool
 
-evalTaskTest id test@(FRONTCLEAR _ ) = do
-  (MySymState symT (st:stck) err nB ) <- get
-  let world = getWorld id symT
-  let pos = moveInDir (willyIsAt world) (willyDirection world)
-  io $ putStrLn $ "Voy a revisar la casilla " ++ show pos-- QUITAR LUEGO
-  case validStart id pos symT of
-    0 -> return (True)
-    _ -> return (False)
+evalTaskTest id test@(FRONTCLEAR _ ) = checkClear 1 (TURNLEFT (1,1)) id test
 
-evalTaskTest id test@(LEFTCLEAR _ ) = do
-  (MySymState symT (st:stck) err nB ) <- get
-  let world = getWorld id symT
-  let newD = changeDirection (willyDirection world) (TURNLEFT (1,1))
-  let pos = moveInDir (willyIsAt world) newD
-  io $ putStrLn $ "Voy a revisar la casilla " ++ show pos-- QUITAR LUEGO
-  case validStart id pos symT of
-    0 -> return (True)
-    _ -> return (False)
+evalTaskTest id test@(LEFTCLEAR _ ) = checkClear 0 (TURNLEFT (1,1)) id test
 
-evalTaskTest id test@(RIGHTCLEAR _ ) = do
-  (MySymState symT (st:stck) err nB ) <- get
-  let world = getWorld id symT
-  let newD = changeDirection (willyDirection world) (TURNRIGHT (1,1))
-  let pos = moveInDir (willyIsAt world) newD
-  io $ putStrLn $ "Voy a revisar la casilla " ++ show pos-- QUITAR LUEGO
-  case validStart id pos symT of
-    0 -> return (True)
-    _ -> return (False)
+evalTaskTest id test@(RIGHTCLEAR _ ) = checkClear 0 (TURNRIGHT (1,1)) id test
 
 evalTaskTest id (LOOKNORTH _ ) = do
-  (MySymState symT (st:stck) err nB ) <- get
+  symT <- gets symTable
   let world = getWorld id symT
   let dir = willyDirection world
   return (dir == "north")
 
 evalTaskTest id (LOOKEAST _ ) = do
-  (MySymState symT (st:stck) err nB ) <- get
+  symT <- gets symTable
   let world = getWorld id symT
   let dir = willyDirection world
   return (dir == "east")
 
 evalTaskTest id (LOOKSOUTH _ ) = do
-  (MySymState symT (st:stck) err nB ) <- get
+  symT <- gets symTable
   let world = getWorld id symT
   let dir = willyDirection world
   return (dir == "south")
 
 evalTaskTest id (LOOKWEST _ ) = do
-  (MySymState symT (st:stck) err nB ) <- get
+  symT <- gets symTable
   let world = getWorld id symT
   let dir = willyDirection world
   return (dir == "west")
 
 
 evalFinalGoal :: String -> FINALGOAL -> MyStateM (Bool)
-evalFinalGoal _ _ = return (True)
+evalFinalGoal id (FGAND (l,c) left right) = do
+  l <- evalFinalGoal id left
+  r <- evalFinalGoal id right
+  return (l && r)
+
+evalFinalGoal id (FGOR (l,c) left right) = do
+  l <- evalFinalGoal id left
+  r <- evalFinalGoal id right
+  return (l || r)
+
+evalFinalGoal id (FGNOT (l,c) exp) = do
+  e <- evalFinalGoal id exp
+  return (not e)
+
+evalFinalGoal wid (FGID (l,c) id) = do
+  (MySymState symT stck err nB ) <- get
+  case Hash.lookup id' symT of -- search the bool variable in the table
+    Just lst -> do
+      let scope = getWorldScope wid symT          
+      let boolLst = filter isBoolOrGuard lst
+      io $ print "errsrsrsr"
+      io $ print scope
+      io $ print boolLst
+      let boolVar = filter (\x -> defBlock x == scope) boolLst !! 0
+      case boolVar of
+        WBoolean{} -> return $ value boolVar
+        Goal{} -> evalGoal wid $ test boolVar
+  where 
+    isBoolOrGuard x = isBoolean x || isGoal x
+    id' = getStr id
+
 
 
 evalGoal :: String -> GOALTEST -> MyStateM (Bool)
 evalGoal wId (WILLYISAT (l,c) col row ) = do
-  (MySymState symT (st:stck) err nB ) <- get
+  (MySymState symT stck err nB ) <- get
   let world = getWorld wId symT
   let pos = willyIsAt world
   return (pos == (c,r))
@@ -284,18 +336,18 @@ evalGoal wId (WILLYISAT (l,c) col row ) = do
     r = getValue row
 
 evalGoal wId (OBJECTSIN (l,c) n oId) = do
-  (MySymState symT (st:stck) err nB ) <- get
+  (MySymState symT stck err nB ) <- get
   let world = getWorld wId symT
   let nObjs = length $ filter (\x -> x == oId') (objectsInB world)
-  return (n' == nObjs)
+  return (n' == nObjs) ---------------------------------------------- n' <= nObjs ?
   where 
     n'   = getValue n
     oId' = getStr oId
 
 evalGoal wId (OBJECTSAT (l,c) n oId col row) = do
-  (MySymState symT (st:stck) err nB ) <- get
+  (MySymState symT stck err nB ) <- get
   let m = numberOfObjects wId oId' (c,r) symT
-  return (m >= n')
+  return (m >= n') ------------------------------------------ == ?
   where 
     n'   = getValue n
     oId' = getStr oId
@@ -321,11 +373,11 @@ runWhile id (l,c) guard inst = do
     return ()
 
 moveInDir :: Pos -> String -> Pos -- No se si las direcciones funcionan asi
-moveInDir (r,c) dir = case dir of
-  "north" -> (r,c+1)
-  "south" -> (r,c-1)
-  "west"  -> (r-1,c)
-  "east"  -> (r+1,c)
+moveInDir (x,y) dir = case dir of
+  "north" -> (x,y+1)
+  "south" -> (x,y-1)
+  "west"  -> (x-1,y)
+  "east"  -> (x+1,y)
 
 
 changeDirection :: String -> TASKINSTR -> String
@@ -363,12 +415,6 @@ dropObject wId objId = do
       | otherwise = x:(dropObject' oId xs)
 
 
-getWorld :: String -> SymTable -> SymValue
-getWorld id symT = case Hash.lookup id symT of 
-  Just listVal -> filter isWorld listVal !! 0
-  otherwise -> World (1,1) id 0 0 Hash.empty (1,1) 1 [] (-1,-1) "north" None
-
-
 numberOfObjects :: String -> String -> Pos -> SymTable -> Int
 numberOfObjects worldId objId (c,r) symT = do
   case Hash.lookup worldId symT of
@@ -381,3 +427,16 @@ numberOfObjects worldId objId (c,r) symT = do
             Nothing -> 0
         Nothing -> 0
     Nothing -> 0
+
+checkClear :: Int -> TASKINSTR -> String -> TEST -> MyStateM (Bool)
+checkClear front dir id test = do
+  (MySymState symT stck err nB ) <- get
+  let world = getWorld id symT
+  let newD = if (front==1)
+               then changeDirection (willyDirection world) (dir)
+               else willyDirection world
+  let pos = moveInDir (willyIsAt world) newD
+  io $ putStrLn $ "Voy a revisar la casilla " ++ show pos-- QUITAR LUEGO
+  case validStart id pos symT of
+    0 -> return (True)
+    _ -> return (False)

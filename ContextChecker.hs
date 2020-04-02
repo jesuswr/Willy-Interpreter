@@ -604,6 +604,11 @@ popScope = do
   put(MySymState symT xs err nB)
 
 
+getWorld :: String -> SymTable -> SymValue
+getWorld id symT = case Hash.lookup id symT of 
+  Just listVal -> filter isWorld listVal !! 0
+  otherwise -> World (1,1) id 0 1 Hash.empty (1,1) 1 [] (1,1) "north" None
+
 -- Receives the id of the world and the new size and updates the size
 -- in the table,
 updWorldSize :: String -> (Int,Int) -> MyStateM ()
@@ -615,33 +620,19 @@ updWorldSize id (c,r) = do
       let oldWorld = filter isWorld listVal !! 0 
       let newWorld = oldWorld{size=(c,r)} 
       put(MySymState (Hash.insert id (updateWListVal newWorld listVal) symT) stck err nB)
-      
+  
 
 -- Gets the id of the world and the table and startreturns the size of the world
 getWSize :: String -> SymTable -> (Int,Int)
-getWSize id symT = 
-  case Hash.lookup id symT of
-    Just listVal -> 
-      size $ filter isWorld listVal !! 0
-    _ -> (1,1)
-
+getWSize id symT = size $ getWorld id symT
 
 -- Gets the id of the world and the table and startreturns the starting position
 getWStartPos :: String -> SymTable -> Pos
-getWStartPos id symT = 
-  case Hash.lookup id symT of
-    Just listVal -> 
-      willyIsAt $ filter isWorld listVal !! 0
-    _ -> (-1,-1)
-
+getWStartPos id symT = willyIsAt $ getWorld id symT
 
 -- Gets the id of the world and the table and startreturns Willy's current direction
 getWDirection :: String -> SymTable -> String
-getWDirection id symT = 
-  case Hash.lookup id symT of
-    Just listVal -> 
-      willyDirection $ filter isWorld listVal !! 0
-    _ -> "north"
+getWDirection id symT = willyDirection $ getWorld id symT
 
 
 -- Receives the x and y start coordinates and end coordinates of the wall,
@@ -811,12 +802,8 @@ pickObject worldId objId (c,r) = do
 -- Receives the world id and the table and returns the capacity of 
 -- the basket of that world
 basketCap :: String -> SymTable -> Int
-basketCap wId symT =
-  case Hash.lookup wId symT of 
-    Just listVal -> do
-      let world = filter isWorld listVal !! 0
-      basketSize world - (length $ objectsInB world)
-    otherwise -> 0 -- Este nunca pasa
+basketCap wId symT = basketSize world - (length $ objectsInB world)
+  where world = getWorld wId symT
 
 
 -- Receives the world id and the table and returns if the basket if full
@@ -826,25 +813,17 @@ isBasketFull wId symT = if basketCap wId symT == 0 then True else False
 
 -- Receives the world id and the table and returns the scope number of that world
 getWorldScope :: String -> SymTable -> Int
-getWorldScope wId symT =
-  case Hash.lookup wId symT of 
-    Just listVal -> do
-      let world = filter isWorld listVal !! 0
-      numBlock world 
-    otherwise -> 0   
+getWorldScope wId symT = numBlock $ getWorld wId symT
 
 
 -- Receives the world id and the table and returns true if a final goal was
 -- defined for that world or false otherwise
 worldHasFG :: String -> SymTable -> Bool
 worldHasFG wId symT =
-  case Hash.lookup wId symT of 
-    Just listVal -> do
-      let world = filter isWorld listVal !! 0
-      case finalG world of
+  case finalG world of
         None      -> False
         otherwise -> True
-    otherwise -> False   
+  where world = getWorld wId symT
 
 
 -- Receives the id of the world and the FINALGOAL and updates the world
@@ -1043,4 +1022,10 @@ updateWListVal newWorld (val:vals)
   | isWorld val = newWorld:vals
   | otherwise    = val:updateWListVal newWorld vals
 
+-- Receives the new value of the bool and a list of SymValues with 
+-- the same id as the bool and inserts the new bool in it
+updateBoolLst :: Int -> SymValue -> [SymValue] -> [SymValue]
+updateBoolLst old newBool (val:vals)
+  | defBlock val == old = newBool:vals
+  | otherwise           = val:updateBoolLst old newBool vals
 
