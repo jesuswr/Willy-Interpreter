@@ -9,6 +9,7 @@ import ContextChecker
 import PrintSymTable
 import qualified Data.Map as Hash
 import System.Exit
+import Simulator
 
 
 runTask :: String -> [BLOCK] -> MyStateM ()
@@ -18,8 +19,6 @@ runTask taskId blocks = do
   (MySymState symT stck err nB ) <- get
   case err of
     []   -> do
-      io $ putStr $ printSymTable symT -- QUITAR LUEGO
-      io $ putStrLn "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa\n\n\n" -- QUITAR LUEGO
       evalTask taskId blocks
     str  -> do
       io $ putStrLn "\nErrores de contexto:\n"
@@ -33,12 +32,15 @@ evalTask taskId (x:xs) = case x of
   (TASK (l,c) (TKId tP tId) (TKId wP wId) tasks) -> do
     if taskId == tId then do
       (MySymState symT stck err nB ) <- get
+      printWorld wId -- print initial world configuration
       let wSc = getWorldScope wId symT
       put(MySymState symT (wSc:stck) err nB) -- push world scope. From this time there is only one world in stack
       pushScope -- push this task  scope. The task is already in symT.
-      io $ putStrLn $ wId ++ " " ++ tId ++ " " ++ taskId -- QUITAR LUEGO
       runTaskInsts wId tasks
-    else evalTask taskId xs
+      (MySymState symT stck err nB ) <- get
+      checkFinalGoal wId -- check final goal
+    else 
+      evalTask taskId xs
 
 
 runTaskInsts :: String -> [TASKINSTR] -> MyStateM ()
@@ -48,12 +50,21 @@ runTaskInsts id (x:xs) =  do  -- duda, funciona: runTaskInst x >>= runTaskInsts 
   runTaskInsts id xs
 
 
+checkFinalGoal :: String -> MyStateM ()
+checkFinalGoal wId = do
+  (MySymState symT stck err nB ) <- get
+  let world = getWorld wId symT
+  success <- evalFinalGoal wId (goal $ finalG world)
+  if success then
+    io $ putStrLn "El final goal del mundo fue logrado"
+  else
+    io $ putStrLn "El final goal del mundo no fue logrado"
+
+
 runTaskInst :: String ->  TASKINSTR -> MyStateM ()
 runTaskInst id (IF (l,c) guard instr) = do
-  io $ putStrLn "Voy a un if" -- QUITAR LUEGO
   valid <- evalTaskTest id guard
   if valid then do
-    io $ putStrLn "Entre en un if "-- QUITAR LUEGO
     pushScope 
     runTaskInst id instr
     popScope
@@ -61,21 +72,17 @@ runTaskInst id (IF (l,c) guard instr) = do
     return ()
 
 runTaskInst id (IFELSE (l,c) guard instr1 instr2) = do
-  io $ putStrLn "Voy a un if"-- QUITAR LUEGO
   valid <- evalTaskTest id guard
   if valid then do
-    io $ putStrLn "Entre en un if (e)"-- QUITAR LUEGO
     pushScope
     runTaskInst id instr1
     popScope
   else do
-    io $ putStrLn "Entre en un else "-- QUITAR LUEGO
     pushScope
     runTaskInst id instr2
     popScope
 
 runTaskInst id (REPEAT (l,c) n instr) = do
-  io $ putStrLn "Voy a un repeat "-- QUITAR LUEGO
   pushScope
   runRepeat id (l,c) n' instr
   popScope
@@ -83,7 +90,6 @@ runTaskInst id (REPEAT (l,c) n instr) = do
     n' = getValue n
 
 runTaskInst id thisInstr@(WHILE (l,c) guard instr) = do
-  io $ putStrLn "Voy a un while"-- QUITAR LUEGO
   pushScope
   runWhile id (l,c) guard instr
   popScope
@@ -94,68 +100,56 @@ runTaskInst id (BEGIN (l,c) instrs) = do
   popScope
 
 runTaskInst id (DEFINE (l,c) (TKId _ tId) instr) = do
-  io $ putStrLn "Voy a definir algo"-- QUITAR LUEGO
   (MySymState symT (st:stck) err nB ) <- get
   let val = Instruction (l,c) id st (nB+1) instr
-  pushScope
   insToTable tId val
-  popScope
 
 runTaskInst id inst@(MOVE _) = do
   (MySymState symT (st:stck) err nB ) <- get
   let p = getWStartPos id symT
   let d = getWDirection id symT
   let newP = moveInDir p d
-  io $ putStrLn $ "cambiare la pos de willy " ++ show p-- QUITAR LUEGO
   case validStart id newP symT of
     1 -> Prelude.error "No se puede salir del mapa"
     2 -> Prelude.error "No se puede salir del mapa"
     3 -> Prelude.error "Hay una pared en la casilla a la que se quiere ir"
     0 -> do
       updStartPos id newP d
-      (MySymState symT (st:stck) err nB ) <- get
-      let p2 = getWStartPos id symT
-      io $ putStrLn $ "ahora la pos de willy es " ++ show p2-- QUITAR LUEGO
+      (MySymState symT stck err nB ) <- get
+      printWorld id
       return ()
 
 runTaskInst id inst@(TURNLEFT _) = do
   (MySymState symT (st:stck) err nB ) <- get
   let d = getWDirection id symT
-  io $ putStrLn $ "veo hacia el " ++ d ++ " " ++ show inst-- QUITAR LUEGO
   let newD = changeDirection d inst
   updDirection id newD
-  (MySymState symT (st:stck) err nB ) <- get-- QUITAR LUEGO
-  let d = getWDirection id symT-- QUITAR LUEGO
-  io $ putStrLn $ d-- QUITAR LUEGO
+  printWorld id
 
 runTaskInst id inst@(TURNRIGHT _) = do
   (MySymState symT (st:stck) err nB ) <- get
   let d = getWDirection id symT
-  io $ putStrLn $ "veo hacia el " ++ d ++ " " ++ show inst-- QUITAR LUEGO
   let newD = changeDirection d inst
   updDirection id newD
-  (MySymState symT (st:stck) err nB ) <- get-- QUITAR LUEGO
-  let d = getWDirection id symT-- QUITAR LUEGO
-  io $ putStrLn $ d-- QUITAR LUEGO
+  printWorld id
 
 runTaskInst id inst@(PICK (l,c) (TKId _ objId)) = do
   (MySymState symT (st:stck) err nB ) <- get
-  io $ putStrLn $ "Intentare recoger " ++ objId-- QUITAR LUEGO
-  io $ putStrLn $ show (basketCap id symT) ++ " haaaaa"-- QUITAR LUEGO
   case not $ isBasketFull id symT of
     True -> do
       let pos = getWStartPos id symT
       pickObject id objId pos
       insertObject id objId 1 symT
-    False -> do
+      printWorld id
+    False -> 
       Prelude.error "No hay suficiente espacio en basket"
 
 runTaskInst id inst@(DROP (l,c) (TKId _ objId)) = do
-  io $ putStrLn "Dropear un objeto"-- QUITAR LUEGO
   (MySymState symT (st:stck) err nB ) <- get
   let pos = getWStartPos id symT
   dropObject id objId
   placeObject id objId 1 pos
+  printWorld id
 
 runTaskInst id inst@(SET p (TKId _ boolId)) =
   runTaskInst id (SETTO p (TKId p boolId) (TKtrue p))
@@ -168,9 +162,6 @@ runTaskInst id inst@(SETTO p (TKId _ boolId) bool) = do
       let boolLst = filter isBoolean lst
       let oldBool = filter (\x -> defBlock x == scope) boolLst !! 0
       let newBool = oldBool{value= getBool bool}
-      io $ print "valores previos y posteriores del bool : "
-      io $ print oldBool
-      io $ print newBool
       put(MySymState (Hash.insert boolId (updateBoolLst scope newBool lst) symT) stck err nB)
 
 runTaskInst id inst@(CLEAR p (TKId _ boolId)) =
@@ -185,13 +176,11 @@ runTaskInst id inst@(FLIP p (TKId _ boolId)) = do
       let oldBool = filter (\x -> defBlock x == scope) boolLst !! 0
       let boolVal = value oldBool
       let newBool = oldBool{value= not boolVal}
-      io $ print "jeje : "
-      io $ print oldBool
-      io $ print newBool
       put(MySymState (Hash.insert boolId (updateBoolLst scope newBool lst) symT) stck err nB)
 
 
 runTaskInst id (TERMINATE _) = do
+  checkFinalGoal id
   io $ exitWith $ ExitSuccess
 
 runTaskInst id (INSTRID (l,c) (TKId _ objId)) = do
@@ -223,14 +212,10 @@ evalTaskTest id (TESTNOT (l,c) exp) = do
 
 evalTaskTest wid (TESTID (l,c) (TKId _ id)) = do
   (MySymState symT stck err nB ) <- get
-  io $ putStrLn (id ++ " este es el id que jode")
   case Hash.lookup id symT of -- search the bool variable in the table
     Just lst -> do
       let scope = getWorldScope wid symT          
       let boolLst = filter isBoolOrGuard lst
-      io $ print "errsrsrsr"
-      io $ print scope
-      io $ print boolLst
       let boolVar = filter (\x -> defBlock x == scope) boolLst !! 0
       case boolVar of
         WBoolean{} -> return $ value boolVar
@@ -257,7 +242,6 @@ evalTaskTest wid (CARRYING (l,c) (TKId _ id)) = do
   return $ elem id objs
 
 evalTaskTest id (TESTTOF _ bool) = do
-  io $ print bool-- QUITAR LUEGO
   return $ getBool bool
 
 evalTaskTest id test@(FRONTCLEAR _ ) = checkClear 1 (TURNLEFT (1,1)) id test
@@ -312,9 +296,6 @@ evalFinalGoal wid (FGID (l,c) id) = do
     Just lst -> do
       let scope = getWorldScope wid symT          
       let boolLst = filter isBoolOrGuard lst
-      io $ print "errsrsrsr"
-      io $ print scope
-      io $ print boolLst
       let boolVar = filter (\x -> defBlock x == scope) boolLst !! 0
       case boolVar of
         WBoolean{} -> return $ value boolVar
@@ -322,7 +303,6 @@ evalFinalGoal wid (FGID (l,c) id) = do
   where 
     isBoolOrGuard x = isBoolean x || isGoal x
     id' = getStr id
-
 
 
 evalGoal :: String -> GOALTEST -> MyStateM (Bool)
@@ -339,7 +319,7 @@ evalGoal wId (OBJECTSIN (l,c) n oId) = do
   (MySymState symT stck err nB ) <- get
   let world = getWorld wId symT
   let nObjs = length $ filter (\x -> x == oId') (objectsInB world)
-  return (n' == nObjs) ---------------------------------------------- n' <= nObjs ?
+  return (n' <= nObjs)
   where 
     n'   = getValue n
     oId' = getStr oId
@@ -347,7 +327,7 @@ evalGoal wId (OBJECTSIN (l,c) n oId) = do
 evalGoal wId (OBJECTSAT (l,c) n oId col row) = do
   (MySymState symT stck err nB ) <- get
   let m = numberOfObjects wId oId' (c,r) symT
-  return (m >= n') ------------------------------------------ == ?
+  return (m >= n')
   where 
     n'   = getValue n
     oId' = getStr oId
@@ -357,7 +337,6 @@ evalGoal wId (OBJECTSAT (l,c) n oId col row) = do
 runRepeat :: String -> Pos -> Int -> TASKINSTR -> MyStateM ()
 runRepeat _ _ 0 _ = return ()
 runRepeat id (l,c) n task = do
-  io $ putStrLn "Entre en un loop del repeat "-- QUITAR LUEGO
   runTaskInst id task
   runRepeat id (l,c) (n-1) task
 
@@ -366,13 +345,12 @@ runWhile :: String -> Pos -> TEST -> TASKINSTR -> MyStateM ()
 runWhile id (l,c) guard inst = do
   valid <- evalTaskTest id guard
   if valid then do
-    io $ putStrLn "Sigo en el while" -- QUITAR LUEGO
     runTaskInst id inst
     runWhile id (l,c) guard inst
   else
     return ()
 
-moveInDir :: Pos -> String -> Pos -- No se si las direcciones funcionan asi
+moveInDir :: Pos -> String -> Pos
 moveInDir (x,y) dir = case dir of
   "north" -> (x,y+1)
   "south" -> (x,y-1)
@@ -436,7 +414,13 @@ checkClear front dir id test = do
                then changeDirection (willyDirection world) (dir)
                else willyDirection world
   let pos = moveInDir (willyIsAt world) newD
-  io $ putStrLn $ "Voy a revisar la casilla " ++ show pos-- QUITAR LUEGO
   case validStart id pos symT of
     0 -> return (True)
     _ -> return (False)
+
+
+
+printWorld :: String -> MyStateM ()
+printWorld wId = do
+  map <- printMap wId
+  io $ putStrLn $ map

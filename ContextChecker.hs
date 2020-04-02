@@ -1015,6 +1015,13 @@ isTask _      = False
 isTrue :: SymValue -> Bool
 isTrue _ = True
 
+
+isWorldObject :: WorldElements -> Bool
+isWorldObject Objects{} = True
+
+isWorldObject _         = False
+
+
 -- Receives the new value of the world and a list of SymValues with 
 -- the same id as the world and inserts the new world in it
 updateWListVal :: SymValue -> [SymValue] -> [SymValue]
