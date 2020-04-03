@@ -21,7 +21,7 @@ Este programa lo que hace es recorrer el mapa en forma de espiral y dejando obje
 
 ### follow_path.willy
 
-En este programa el mapa tiene camino desde un inicio hasta un final marcado por objetos y lo recorre hasta llegar al final que esta marcado por un objeto especial, es importante que en cada momento Willy solo sea capaz de tomar un camino para que funcione. El programa se detiene cuando Willy encuentra el objeto que marca el final y el final goal es que este en la casilla final.
+En este programa el mapa tiene un camino desde un inicio hasta un final marcado por objetos y Willy lo recorre hasta llegar al final que esta marcado por un objeto especial, es importante que en cada momento Willy solo sea capaz de tomar un camino para que funcione. El programa se detiene cuando Willy encuentra el objeto que marca el final y el final goal es que este en la casilla final.
 
 ### pick_all.willy
 
