@@ -20,7 +20,7 @@ import PrintSymTable
 import Control.Monad.State
 import SymTable
 import ContextChecker
-import RunTask2
+import RunTask
 import Text.Read
 import qualified Data.Map as Hash
 
