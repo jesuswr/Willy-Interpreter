@@ -18,3 +18,7 @@ Adicionalmente se imprime el mundo con una descripcion de las casillas, la baske
 Este programa lo que hace es recorrer el mapa en forma de espiral y dejando objetos a medida que va haciendo el recorrido, se detiene cuando ya no tiene a donde ir y el objetivo fue logrado si en todas las casillas hay un objeto. Este programa esta basado en el siguiente problema:
 
 [Circular Matrix (Construct a matrix with numbers 1 to m*n in spiral way)](https://www.geeksforgeeks.org/circular-matrix-construct-a-matrix-with-numbers-1-to-mn-in-spiral-way/)
+
+### follow_path.willy
+
+Este programa recibe un camino desde un inicio hasta un final marcado por objetos y lo recorre hasta llegar al final que esta marcado por un objeto especial, es importante que en cada momento Willy solo sea capaz de tomar un camino para que funcione.
