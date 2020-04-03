@@ -1,0 +1,99 @@
+{{
+	Program to make willy pick all the gold in the map and drop it at 1 1
+}}
+
+
+begin-world myworld
+	World 4 4;
+	Basket of capacity 1000;
+
+	Boolean mybool with initial value true;
+
+
+	Object-type gold of color yellow;
+	Place 1 of gold at 2 2;
+	Place 1 of gold at 3 1;
+	Place 1 of gold at 1 4;
+	Place 1 of gold at 3 4;
+	Place 1 of gold at 2 3;
+	Place 1 of gold at 2 1;
+	Place 1 of gold at 4 1;
+	Place 1 of gold at 3 2;
+	Place 1 of gold at 1 2;
+
+	Goal mygoal11 is 9 gold objects at 1 1;
+	Goal mygoal12 is 1 gold objects at 1 2;
+	Goal mygoal13 is 1 gold objects at 1 3;
+	Goal mygoal14 is 1 gold objects at 1 4;
+	Goal mygoal21 is 1 gold objects at 2 1;
+	Goal mygoal22 is 1 gold objects at 2 2;
+	Goal mygoal23 is 1 gold objects at 2 3;
+	Goal mygoal24 is 1 gold objects at 2 4;
+	Goal mygoal31 is 1 gold objects at 3 1;
+	Goal mygoal32 is 1 gold objects at 3 2;
+	Goal mygoal33 is 1 gold objects at 3 3;
+	Goal mygoal34 is 1 gold objects at 3 4;
+	Goal mygoal41 is 1 gold objects at 4 1;
+	Goal mygoal42 is 1 gold objects at 4 2;
+	Goal mygoal43 is 1 gold objects at 4 3;
+	Goal mygoal44 is 1 gold objects at 4 4;
+
+	Final goal is mygoal11 and not(mygoal12 or mygoal13 or mygoal14 or mygoal21 or mygoal22 or mygoal23 or mygoal24 or mygoal31 or mygoal32 or mygoal33 or mygoal34 or mygoal41 or mygoal42 or mygoal43 or mygoal44);
+
+end-world
+
+
+begin-task x on myworld 
+
+	define go_back as
+		begin
+			while not looking-west do
+				turn-right;
+			while front-clear do
+				move;
+
+			turn-left;
+			while front-clear do
+				move;
+
+			while carrying(gold) do
+				drop gold;
+
+			terminate;
+		end
+
+	define move_next as
+		if front-clear then
+			move;
+		else
+			begin
+				if mybool then
+					begin
+						turn-right;
+						if not front-clear then
+							go_back;
+						move;
+						turn-right;
+					end
+				else
+					begin
+						turn-left;
+						if not front-clear then
+							go_back;
+						move;
+						turn-left;
+					end
+
+				flip mybool;
+			end
+		
+
+	while true do
+		begin
+			if found(gold) then
+				pick gold;
+
+			move_next;
+		end
+
+end-task

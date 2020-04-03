@@ -1,0 +1,73 @@
+{{
+	Program to calculate de xor of two numbers using willy
+}}
+
+
+begin-world myworld
+	World 16 3;
+	Basket of capacity 1000;
+
+	Boolean mybool with initial value true;
+
+	Boolean myxor with initial value false;
+
+
+
+	Object-type one of color blue;
+	Place 16 of one in basket;
+	Place 1 of one at 1 2;
+	Place 1 of one at 3 2;
+	Place 1 of one at 6 2;
+	Place 1 of one at 9 2;
+	Place 1 of one at 11 2;
+	Place 1 of one at 13 2;
+	Place 1 of one at 15 2;
+	Place 1 of one at 1 3;
+	Place 1 of one at 4 3;
+	Place 1 of one at 9 3;
+	Place 1 of one at 12 3;
+	Place 1 of one at 13 3;
+	Place 1 of one at 16 3;
+
+	
+	Final goal is mybool;
+
+end-world
+
+
+begin-task x on myworld 
+	
+	define calculate_bit_xor as
+		begin
+			clear myxor;
+			if found(one) then
+				flip myxor;
+			move;
+			if found(one) then
+				flip myxor;
+
+			move;
+			if myxor then
+				drop one;
+		end
+
+	define go_next_bit as
+		begin
+			turn-left;
+			if front-clear then
+				move;
+				turn-left;
+		end
+
+	repeat 16 times
+		begin
+			move;
+			move;
+			turn-right;
+			turn-right;
+
+			calculate_bit_xor;
+			go_next_bit;
+		end
+
+end-task
