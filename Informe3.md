@@ -21,4 +21,12 @@ Este programa lo que hace es recorrer el mapa en forma de espiral y dejando obje
 
 ### follow_path.willy
 
-Este programa recibe un camino desde un inicio hasta un final marcado por objetos y lo recorre hasta llegar al final que esta marcado por un objeto especial, es importante que en cada momento Willy solo sea capaz de tomar un camino para que funcione.
+En este programa el mapa tiene camino desde un inicio hasta un final marcado por objetos y lo recorre hasta llegar al final que esta marcado por un objeto especial, es importante que en cada momento Willy solo sea capaz de tomar un camino para que funcione. El programa se detiene cuando Willy encuentra el objeto que marca el final y el final goal es que este en la casilla final.
+
+### pick_all.willy
+
+En este programa willy recorre todo el mapa recogiendo oro y luego debe poner todo el oro recogido en la posicion 1 1, el final goal es que no haya oro en las casillas que no sean la 1 1 y que todo el oro del mapa este en 1 1.
+
+### xor.willy
+
+Este programa usa el mapa como si estuviesemos viendo cada fila como un entero y calcula el xor de los enteros que estan en las dos primeras filas y lo coloca en la tercera. Aqui el final goal siempre es true ya que no hay forma de revisar el xor. Este problema esta inspirado en el problema de que tienes un arreglo en el que todos los elementos estan repetidos, menos uno, la mejor solucion para esto es calcular el xor de todos los elementos del arreglo y el resultado de esto es la respuesta por las propiedades del xor.
