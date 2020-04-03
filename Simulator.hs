@@ -14,7 +14,7 @@ import System.Exit
 
 printMap :: String -> MyStateM (String)
 printMap wId = do
-  (MySymState symT stck err nB ) <- get
+  symT <- gets symTable
   let world = getWorld wId symT
   let (c,r) = size world
   let maxSpace = length (show (c*r-1)) + 2

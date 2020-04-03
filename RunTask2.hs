@@ -10,44 +10,50 @@ import PrintSymTable
 import qualified Data.Map as Hash
 import System.Exit
 import Simulator
+import qualified Text.Read as R
+import Control.Concurrent
+import System.Console.ANSI
+import System.IO
+import Data.Maybe
 
 
-runTask :: String -> [BLOCK] -> MyStateM ()
-runTask taskId [] = Prelude.error "No hay tareas ni mundos"
-runTask taskId blocks = do 
+runTask :: String -> [BLOCK] -> String-> MyStateM ()
+runTask taskId [] _ = Prelude.error "No hay tareas ni mundos"
+runTask taskId blocks mode = do 
   createSymTable blocks
   (MySymState symT stck err nB ) <- get
   case err of
     []   -> do
-      evalTask taskId blocks
+      evalTask taskId blocks mode
     str  -> do
       io $ putStrLn "\nErrores de contexto:\n"
       io $ putStrLn $ unlines $ reverse err
 
 
-evalTask :: String -> [BLOCK] -> MyStateM ()
-evalTask taskId [] = Prelude.error "No se encontro la tarea"
-evalTask taskId (x:xs) = case x of
-  WORLD{} -> evalTask taskId xs
+evalTask :: String -> [BLOCK] -> String -> MyStateM ()
+evalTask taskId [] _ = Prelude.error "No se encontro la tarea"
+evalTask taskId (x:xs) mode = case x of
+  WORLD{} -> evalTask taskId xs mode
   (TASK (l,c) (TKId tP tId) (TKId wP wId) tasks) -> do
     if taskId == tId then do
       (MySymState symT stck err nB ) <- get
+      io $ setTitle "WILLY*"
       printWorld wId -- print initial world configuration
       let wSc = getWorldScope wId symT
       put(MySymState symT (wSc:stck) err nB) -- push world scope. From this time there is only one world in stack
       pushScope -- push this task  scope. The task is already in symT.
-      runTaskInsts wId tasks
+      runTaskInsts wId tasks mode
       (MySymState symT stck err nB ) <- get
       checkFinalGoal wId -- check final goal
     else 
-      evalTask taskId xs
+      evalTask taskId xs mode
 
 
-runTaskInsts :: String -> [TASKINSTR] -> MyStateM ()
-runTaskInsts id [] = return ()
-runTaskInsts id (x:xs) =  do  -- duda, funciona: runTaskInst x >>= runTaskInsts xs
-  runTaskInst id x
-  runTaskInsts id xs
+runTaskInsts :: String -> [TASKINSTR] -> String -> MyStateM ()
+runTaskInsts id [] _ = return ()
+runTaskInsts id (x:xs) mode =  do  -- duda, funciona: runTaskInst x >>= runTaskInsts xs
+  runTaskInst id x mode
+  runTaskInsts id xs mode
 
 
 checkFinalGoal :: String -> MyStateM ()
@@ -55,56 +61,60 @@ checkFinalGoal wId = do
   (MySymState symT stck err nB ) <- get
   let world = getWorld wId symT
   success <- evalFinalGoal wId (goal $ finalG world)
-  if success then
+  if success then do
+    io $ setSGR [SetColor Foreground Vivid Green]
     io $ putStrLn "El final goal del mundo fue logrado"
-  else
+  else do
+    io $ setSGR [SetColor Foreground Vivid Red]
     io $ putStrLn "El final goal del mundo no fue logrado"
 
 
-runTaskInst :: String ->  TASKINSTR -> MyStateM ()
-runTaskInst id (IF (l,c) guard instr) = do
+runTaskInst :: String ->  TASKINSTR -> String -> MyStateM ()
+runTaskInst id (IF (l,c) guard instr) mode = do
   valid <- evalTaskTest id guard
   if valid then do
     pushScope 
-    runTaskInst id instr
+    runTaskInst id instr mode
     popScope
   else
     return ()
 
-runTaskInst id (IFELSE (l,c) guard instr1 instr2) = do
+runTaskInst id (IFELSE (l,c) guard instr1 instr2) mode = do
   valid <- evalTaskTest id guard
   if valid then do
     pushScope
-    runTaskInst id instr1
+    runTaskInst id instr1 mode
     popScope
   else do
     pushScope
-    runTaskInst id instr2
+    runTaskInst id instr2 mode
     popScope
 
-runTaskInst id (REPEAT (l,c) n instr) = do
+runTaskInst id (REPEAT (l,c) n instr) mode = do
   pushScope
-  runRepeat id (l,c) n' instr
+  runRepeat id (l,c) n' instr mode
   popScope
   where
     n' = getValue n
 
-runTaskInst id thisInstr@(WHILE (l,c) guard instr) = do
+runTaskInst id thisInstr@(WHILE (l,c) guard instr) mode = do
   pushScope
-  runWhile id (l,c) guard instr
+  runWhile id (l,c) guard instr mode
   popScope
 
-runTaskInst id (BEGIN (l,c) instrs) = do
+runTaskInst id (BEGIN (l,c) instrs) mode = do
   pushScope
-  runTaskInsts id instrs
+  runTaskInsts id instrs mode
   popScope
 
-runTaskInst id (DEFINE (l,c) (TKId _ tId) instr) = do
+runTaskInst id (DEFINE (l,c) (TKId _ tId) instr) mode = do
   (MySymState symT (st:stck) err nB ) <- get
   let val = Instruction (l,c) id st (nB+1) instr
   insToTable tId val
 
-runTaskInst id inst@(MOVE _) = do
+runTaskInst id inst@(MOVE _) mode = do
+  when (mode /= "a" && mode /= "m") $ io $ sleepSec mode
+  when (mode == "m") $ io $ getKeyPress id
   (MySymState symT (st:stck) err nB ) <- get
   let p = getWStartPos id symT
   let d = getWDirection id symT
@@ -119,21 +129,27 @@ runTaskInst id inst@(MOVE _) = do
       printWorld id
       return ()
 
-runTaskInst id inst@(TURNLEFT _) = do
+runTaskInst id inst@(TURNLEFT _) mode = do
+  when (mode /= "a" && mode /= "m") $ io $ sleepSec mode
+  when (mode == "m") $ io $ getKeyPress id
   (MySymState symT (st:stck) err nB ) <- get
   let d = getWDirection id symT
   let newD = changeDirection d inst
   updDirection id newD
   printWorld id
 
-runTaskInst id inst@(TURNRIGHT _) = do
+runTaskInst id inst@(TURNRIGHT _) mode = do
+  when (mode /= "a" && mode /= "m") $ io $ sleepSec mode
+  when (mode == "m") $ io $ getKeyPress id
   (MySymState symT (st:stck) err nB ) <- get
   let d = getWDirection id symT
   let newD = changeDirection d inst
   updDirection id newD
   printWorld id
 
-runTaskInst id inst@(PICK (l,c) (TKId _ objId)) = do
+runTaskInst id inst@(PICK (l,c) (TKId _ objId)) mode = do
+  when (mode /= "a" && mode /= "m") $ io $ sleepSec mode
+  when (mode == "m") $ io $ getKeyPress id
   (MySymState symT (st:stck) err nB ) <- get
   case not $ isBasketFull id symT of
     True -> do
@@ -144,17 +160,19 @@ runTaskInst id inst@(PICK (l,c) (TKId _ objId)) = do
     False -> 
       Prelude.error "No hay suficiente espacio en basket"
 
-runTaskInst id inst@(DROP (l,c) (TKId _ objId)) = do
+runTaskInst id inst@(DROP (l,c) (TKId _ objId)) mode = do
+  when (mode /= "a" && mode /= "m") $ io $ sleepSec mode
+  when (mode == "m") $ io $ getKeyPress id
   (MySymState symT (st:stck) err nB ) <- get
   let pos = getWStartPos id symT
   dropObject id objId
   placeObject id objId 1 pos
   printWorld id
 
-runTaskInst id inst@(SET p (TKId _ boolId)) =
-  runTaskInst id (SETTO p (TKId p boolId) (TKtrue p))
+runTaskInst id inst@(SET p (TKId _ boolId)) mode =
+  runTaskInst id (SETTO p (TKId p boolId) (TKtrue p)) mode
 
-runTaskInst id inst@(SETTO p (TKId _ boolId) bool) = do
+runTaskInst id inst@(SETTO p (TKId _ boolId) bool) mode = do
   (MySymState symT stck err nB ) <- get
   case Hash.lookup boolId symT of -- search the bool variable in the table
     Just lst -> do
@@ -164,10 +182,10 @@ runTaskInst id inst@(SETTO p (TKId _ boolId) bool) = do
       let newBool = oldBool{value= getBool bool}
       put(MySymState (Hash.insert boolId (updateBoolLst scope newBool lst) symT) stck err nB)
 
-runTaskInst id inst@(CLEAR p (TKId _ boolId)) =
-  runTaskInst id (SETTO p (TKId p boolId) (TKfalse p))
+runTaskInst id inst@(CLEAR p (TKId _ boolId)) mode =
+  runTaskInst id (SETTO p (TKId p boolId) (TKfalse p)) mode
 
-runTaskInst id inst@(FLIP p (TKId _ boolId)) = do
+runTaskInst id inst@(FLIP p (TKId _ boolId)) mode = do
   (MySymState symT stck err nB ) <- get
   case Hash.lookup boolId symT of -- search the bool variable in the table
     Just lst -> do
@@ -179,11 +197,11 @@ runTaskInst id inst@(FLIP p (TKId _ boolId)) = do
       put(MySymState (Hash.insert boolId (updateBoolLst scope newBool lst) symT) stck err nB)
 
 
-runTaskInst id (TERMINATE _) = do
+runTaskInst id (TERMINATE _) mode = do
   checkFinalGoal id
   io $ exitWith $ ExitSuccess
 
-runTaskInst id (INSTRID (l,c) (TKId _ objId)) = do
+runTaskInst id (INSTRID (l,c) (TKId _ objId)) mode = do
   (MySymState symT (scope:stck) err nB ) <- get
   case Hash.lookup objId symT of -- search the define block in the table
     Just lst -> do 
@@ -191,7 +209,7 @@ runTaskInst id (INSTRID (l,c) (TKId _ objId)) = do
       let defInScope = filter (\x -> defBlock x <= scope) defLst
       let defInst = foldr1 (\x y -> if defBlock x > defBlock y then x else y) defInScope
       pushScope
-      runTaskInst id $ inst defInst
+      runTaskInst id (inst defInst) mode
       popScope
 
 
@@ -250,29 +268,17 @@ evalTaskTest id test@(LEFTCLEAR _ ) = checkClear 0 (TURNLEFT (1,1)) id test
 
 evalTaskTest id test@(RIGHTCLEAR _ ) = checkClear 0 (TURNRIGHT (1,1)) id test
 
-evalTaskTest id (LOOKNORTH _ ) = do
-  symT <- gets symTable
-  let world = getWorld id symT
-  let dir = willyDirection world
-  return (dir == "north")
+evalTaskTest id (LOOKNORTH _ ) = checkLook id "north"
 
-evalTaskTest id (LOOKEAST _ ) = do
-  symT <- gets symTable
-  let world = getWorld id symT
-  let dir = willyDirection world
-  return (dir == "east")
 
-evalTaskTest id (LOOKSOUTH _ ) = do
-  symT <- gets symTable
-  let world = getWorld id symT
-  let dir = willyDirection world
-  return (dir == "south")
+evalTaskTest id (LOOKEAST _ ) = checkLook id "east"
 
-evalTaskTest id (LOOKWEST _ ) = do
-  symT <- gets symTable
-  let world = getWorld id symT
-  let dir = willyDirection world
-  return (dir == "west")
+
+evalTaskTest id (LOOKSOUTH _ ) = checkLook id "south"
+
+
+evalTaskTest id (LOOKWEST _ ) = checkLook id "west"
+
 
 
 evalFinalGoal :: String -> FINALGOAL -> MyStateM (Bool)
@@ -334,19 +340,19 @@ evalGoal wId (OBJECTSAT (l,c) n oId col row) = do
     c    = getValue col
     r    = getValue row
 
-runRepeat :: String -> Pos -> Int -> TASKINSTR -> MyStateM ()
-runRepeat _ _ 0 _ = return ()
-runRepeat id (l,c) n task = do
-  runTaskInst id task
-  runRepeat id (l,c) (n-1) task
+runRepeat :: String -> Pos -> Int -> TASKINSTR -> String -> MyStateM ()
+runRepeat _ _ 0 _ _ = return ()
+runRepeat id (l,c) n task mode = do
+  runTaskInst id task mode
+  runRepeat id (l,c) (n-1) task mode
 
 
-runWhile :: String -> Pos -> TEST -> TASKINSTR -> MyStateM ()
-runWhile id (l,c) guard inst = do
+runWhile :: String -> Pos -> TEST -> TASKINSTR -> String -> MyStateM ()
+runWhile id (l,c) guard inst mode = do
   valid <- evalTaskTest id guard
   if valid then do
-    runTaskInst id inst
-    runWhile id (l,c) guard inst
+    runTaskInst id inst mode
+    runWhile id (l,c) guard inst mode
   else
     return ()
 
@@ -419,8 +425,83 @@ checkClear front dir id test = do
     _ -> return (False)
 
 
+checkLook :: String -> String -> MyStateM (Bool)
+checkLook id dirComp = do
+  symT <- gets symTable
+  let world = getWorld id symT
+  let dir = willyDirection world
+  return (dir == dirComp)
+
 
 printWorld :: String -> MyStateM ()
 printWorld wId = do
+  symT <- gets symTable
+  let (c,r) = getWSize wId symT
+  let maxSpace = length (show (c*r-1)) + 2
+  let width = maxSpace * c
   map <- printMap wId
+  io $ putStr "\n"
+  io $ clearScreen
+  io $ setSGR [SetColor Foreground Vivid Yellow]
+  io $ putStr $ "\n" ++ replicate (max ((width `div` 2)-9) 0) '#'
+  io $ putStr "  WILLY WORLD:  "
+  io $ putStrLn $ replicate (max ((width `div` 2)-9) 0) '#'
+  io $ setSGR [SetColor Foreground Vivid White]
   io $ putStrLn $ map
+
+
+getKeyPress :: String -> IO ()
+getKeyPress id = do
+  c <- newEmptyMVar 
+  hSetBuffering stdin NoBuffering
+  putStr "\nPress any key (with ASCII code) to continue or 'e' to exit (WAITING)\n"
+  saveCursor
+  forkIO $ do
+    a <- System.IO.getChar
+    putMVar c a       
+  (Just x) <- wait 0 c
+  if x == 'e'
+    then do
+      putStrLn "\nEnding execution..."
+      exitWith $ ExitSuccess
+    else return ()
+
+wait cnt c = do
+  a <- tryTakeMVar c
+  if isJust a then do
+    return (a)
+  else do
+    let x = 40
+    clearLine
+    restoreCursor
+    putStr $ replicate ((cnt `mod` x)+1) '.'
+    hFlush stdout
+    threadDelay 500000
+    wait (cnt+1 `mod` x) c
+
+
+sleepSec :: String -> IO ()
+sleepSec sec = do
+  secJust <- return $ (R.readMaybe sec :: Maybe Int)
+  case secJust of
+    (Just seconds) -> do
+      let microSeconds = seconds * 1000000
+      setSGR [SetColor Foreground Vivid Blue]
+      putStr "\nTime: ["
+      progressBar (microSeconds)
+      setSGR [SetColor Foreground Vivid White]
+      return ()
+      --threadDelay microSeconds
+    otherwise -> return ()
+
+progressBar :: Int -> IO ()
+progressBar 0 = return ()
+
+progressBar time = do
+  let sec = 1000000
+  putStr "#"
+  when (time==sec) (putStr "]")
+  hFlush stdout
+  threadDelay sec
+  progressBar (time - sec)
+  return ()

@@ -21,6 +21,7 @@ import Control.Monad.State
 import SymTable
 import ContextChecker
 import RunTask2
+import Text.Read
 import qualified Data.Map as Hash
 
 --Main function
@@ -30,21 +31,36 @@ main = do
         [] -> do putStr ( "Archivo a Interpretar: " )
                  hFlush stdout
                  filePath <- getLine
-                 putStr ( "Tarea a ejecutar: " )
+                 putStr ( "Tarea a ejecutar (modo automatico): " )
                  hFlush stdout
                  taskName <- getLine
-                 if (length $ words filePath) > 1 || (length $ words taskName) > 1 then do wrongFormatInput
-                 else processFile filePath taskName
-        [filePath, taskName] -> processFile filePath taskName
+                 if (length $ words filePath) > 1 || (length $ words taskName) > 1
+                 then do wrongFormatInput
+                 else processFile filePath taskName "a"
+
+        [filePath, taskName, mode] -> do
+          if( mode == "-a" || mode == "--auto" ) 
+            then processFile filePath taskName "a"
+          else if ( mode == "-m" || mode == "--manual")
+            then processFile filePath taskName "m"
+          else wrongFormatInput
+          
+        [filePath, taskName, mode, sec] -> do
+          if( mode /= "-a" && mode /= "--auto" ) then wrongFormatInput
+          else do
+            case (readMaybe sec :: Maybe Int) of
+              (Just x) -> processFile filePath taskName sec
+              otherwise -> wrongFormatInput
+
         _ -> wrongFormatInput
     
 -- Check if file exist and if so then run the project with that file
-processFile :: FilePath -> String -> IO ()
-processFile filePath taskName = do 
+processFile :: FilePath -> String -> String-> IO ()
+processFile filePath taskName mode = do 
   fileExists <- doesFileExist filePath
   if fileExists then do 
     str <- readFile filePath
-    runProject str taskName
+    runProject str taskName mode
     return ()
   else do 
     putStrLn ( "Imposible abrir el archivo " ++ show filePath )
@@ -52,26 +68,20 @@ processFile filePath taskName = do
 -- IO action that output a message of error in case of wrong format in the input
 wrongFormatInput :: IO ()
 wrongFormatInput = do 
-  putStrLn ( "Formato incorrecto: demasiados argumentos." )
-  putStrLn ( "Formato correcto 1: \n./willy <archivo>" )
-  putStrLn ( "Formato correcto 2: \n./willy\nArchivo a Interpretar: <archivo>" )
+  putStrLn ( "Formato incorrecto." )
+  putStrLn ( "Formato correcto 1: \nwilly <archivo> <tarea> -m | --manual" )
+  putStrLn ( "Formato correcto 2: \nwilly <archivo> <tarea> -a | --auto [<segundos>]" )
+  putStrLn ( "Formato correcto 3: \nwilly\nArchivo a Interpretar: <archivo>" )
+  putStrLn ( "Tarea a ejecutar (modo automatico): <tarea>")
 
 -- Pass the string that represents the program to interpret to the scanner 
 -- and show the resuts
-runProject :: String -> String -> IO ()
-runProject str taskName = 
+runProject :: String -> String -> String -> IO ()
+runProject str taskName mode = 
   case scanner str of
     Left s -> putStr s
     Right toks -> do 
       let tk = reverse $ parse toks
       let initTableState = MySymState Hash.empty [0] [] 0
-      --case evalState (createSymTable tk)  initTableState of
-      --  Left errorStr -> do
-      --    putStrLn "Errores de contexto:"
-      --    putStr errorStr
-      --  Right symT -> do
-      --    putStr $ evalState (printParser tk) (PrintState [] 0)
-      --    putStrLn "\n  -  -  - \n"
-      --    putStr $ "TABLE:\n\n" ++ printSymTable symT
-      runStateT (runTask taskName tk) initTableState
+      runStateT (runTask taskName tk mode) initTableState
       return()
