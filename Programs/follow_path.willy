@@ -1,0 +1,106 @@
+{{
+	Program to make willy follow a path of objects until the goal position
+}}
+
+begin-world myworld
+	World 4 4;
+	Basket of capacity 1000;
+
+	Object-type path of color red;
+	Object-type final of color red;
+
+	Place 1 of final at 4 4;
+	Place 1 of path at 2 1;
+	Place 1 of path at 2 2;
+	Place 1 of path at 3 2;
+	Place 1 of path at 3 3;
+	Place 1 of path at 4 3;
+	Place 1 of path at 4 4;
+
+
+	Goal mygoal is willy is at 4 4;
+	Final goal is mygoal;
+end-world
+
+
+begin-task x on myworld
+	define move_north as
+		begin
+			while not looking-north do
+				turn-right;
+			if front-clear then
+				begin
+					move;
+					if not found(path) then
+						begin
+							while not looking-south do
+								turn-right;
+							move;
+						end
+					else
+						pick path;
+				end
+		end
+
+		define move_west as
+		begin
+			while not looking-west do
+				turn-right;
+			if front-clear then
+				begin
+					move;
+					if not found(path) then
+						begin
+							while not looking-east do
+								turn-right;
+							move;
+						end
+					else
+						pick path;
+				end
+		end
+
+		define move_south as
+		begin
+			while not looking-south do
+				turn-right;
+			if front-clear then
+				begin
+					move;
+					if not found(path) then
+						begin
+							while not looking-north do
+								turn-right;
+							move;
+						end
+					else
+						pick path;
+				end
+		end
+
+		define move_east as
+		begin
+			while not looking-east do
+				turn-right;
+			if front-clear then
+				begin
+					move;
+					if not found(path) then
+						begin
+							while not looking-west do
+								turn-right;
+							move;
+						end
+					else
+						pick path;
+				end
+		end
+
+		while not found(final) do
+			begin
+				move_north;
+				move_west;
+				move_east;
+				move_south;
+			end
+end-task

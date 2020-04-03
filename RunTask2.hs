@@ -80,11 +80,13 @@ runTaskInst id (IF (l,c) guard instr) mode = do
     return ()
 
 runTaskInst id (IFELSE (l,c) guard instr1 instr2) mode = do
+  (MySymState symT stck err nB ) <- get
   valid <- evalTaskTest id guard
   if valid then do
     pushScope
     runTaskInst id instr1 mode
     popScope
+
   else do
     pushScope
     runTaskInst id instr2 mode
@@ -382,7 +384,7 @@ changeDirection dir turn = case dir of
 
 dropObject :: String -> String -> MyStateM ()
 dropObject wId objId = do
-  (MySymState symT (st:stck) err nB ) <- get
+  (MySymState symT stck err nB ) <- get
   case Hash.lookup wId symT of
     Nothing -> return()
     Just listVal -> do
@@ -416,7 +418,7 @@ checkClear :: Int -> TASKINSTR -> String -> TEST -> MyStateM (Bool)
 checkClear front dir id test = do
   (MySymState symT stck err nB ) <- get
   let world = getWorld id symT
-  let newD = if (front==1)
+  let newD = if (front==0)
                then changeDirection (willyDirection world) (dir)
                else willyDirection world
   let pos = moveInDir (willyIsAt world) newD

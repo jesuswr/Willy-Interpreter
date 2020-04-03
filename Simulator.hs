@@ -16,12 +16,13 @@ printMap :: String -> MyStateM (String)
 printMap wId = do
   symT <- gets symTable
   let world = getWorld wId symT
+  let dir = "Looking " ++ willyDirection world ++ "\n"
   let (c,r) = size world
   let maxSpace = length (show (c*r-1)) + 2
   let map = unlines $ reverse $ lines $ concat $ printMatrix wId maxSpace (0,0) (c,r) symT
   let worldObj = printWorldObjects (c,r) (desc world)
   let basket = printBasketInfo (objectsInB world)
-  return ( map ++ worldObj ++ basket )
+  return ( map ++ dir ++ worldObj ++ basket )
 
 
 printMatrix :: String -> Int -> Pos -> Pos -> SymTable ->[String]
@@ -50,7 +51,7 @@ getSquare (x:xs) n = x:getSquare xs (n-1)
 printWorldObjects :: Pos -> WorldDesc -> String
 printWorldObjects p wdesc = 
   case unlines $ Prelude.map (printWorldObjects' p) objs of
-    ""  -> " []\n"
+    ""  -> "\n"
     str -> "\n" ++ str
   where
     objs = filter (\(_,x) -> isWorldObject x) (Hash.toList wdesc)
