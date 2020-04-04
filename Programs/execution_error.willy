@@ -9,6 +9,8 @@ begin-world myworld
 
 	Boolean mybool with initial value true;
 
+	Wall east from 1 3 to 7 3;
+
 	Object-type myobj of color blue;
 
 	Final goal is mybool;
@@ -19,5 +21,18 @@ end-world
 begin-task x on myworld 
 
 	drop myobj;
+
+end-task
+
+begin-task y on myworld
+
+	while(true) do move;
+
+end-task
+
+begin-task z on myworld
+	
+	turn-right;
+	while(true) do move;
 
 end-task
