@@ -1,0 +1,24 @@
+{{
+	Program to show lexer errors in Willy*
+}}
+
+
+begin-world myworld
+	World 16 3;
+	Basket of capacity 1000;
+
+	Boolean 1mybool with initial value true;
+
+	Object-type myobj of color blue;
+
+	Final goal is 1mybool;
+
+end-world
+
+
+begin-task x on myworld 
+
+	if 1mybool then
+		move;
+
+end-task
