@@ -1,0 +1,270 @@
+{{
+	Program to calculate if the lenght of a string of 0's is a power of two
+}}
+
+-- This wolrd represents a string of 0's
+begin-world myworld
+	
+	World 17 2;
+	Basket of capacity 1000;
+
+	Boolean is_power_of_two with initial value false;
+	Boolean even with initial value false;
+	Boolean even_z with initial value true;
+	Boolean oz with initial value false;
+	Boolean mtoz with initial value false;
+	Boolean odd_len with initial value false;
+
+
+	Object-type zero of color blue;
+	Object-type crossed of color yellow;
+
+	Place 16 of crossed in basket;
+
+	-- String 1
+	Place 1 of zero at 1 1;
+	Place 1 of zero at 2 1;
+	Place 1 of zero at 3 1;
+	Place 1 of zero at 4 1;
+	Place 1 of zero at 5 1;
+	Place 1 of zero at 6 1;
+	Place 1 of zero at 7 1;
+	Place 1 of zero at 8 1;
+	
+	-- String 2
+	Place 1 of zero at 1 2;
+	Place 1 of zero at 2 2;
+	Place 1 of zero at 3 2;
+	Place 1 of zero at 4 2;
+	Place 1 of zero at 5 2;
+	Place 1 of zero at 6 2;
+	Place 1 of zero at 7 2;
+	Place 1 of zero at 8 2;
+	Place 1 of zero at 9 2;
+	Place 1 of zero at 10 2;
+
+	
+	Final goal is is_power_of_two;
+
+end-world
+
+
+begin-task check_string_1 on myworld 
+	
+	define reject as
+	begin 
+		clear is_power_of_two;
+		terminate;
+	end
+
+	define accept as
+	begin
+		set is_power_of_two;
+		terminate;
+	end
+
+	define move_right as
+	begin
+		if looking-west then
+			begin
+				turn-right;
+				turn-right;
+			end
+		move;
+	end
+
+	define move_left as
+	begin
+		if looking-east then
+			begin
+				turn-right;
+				turn-right;
+			end
+		move;
+	end
+
+	define cross_zero as
+	begin
+		pick zero;
+		drop crossed;
+	end
+
+	define check_remain_one_zero as
+	begin
+
+		clear oz;
+		clear mtoz;
+
+		while(front-clear) do
+		begin
+			if(found(zero)) then
+			begin
+				if(not oz) then set oz;
+				else set mtoz;
+			end
+			move_left;
+		end
+
+		if( (not mtoz) and oz) then accept;
+
+	end
+
+	define scan as
+	begin
+		while(found(zero) or found(crossed)) do
+		begin
+			if(found(zero)) then
+			begin
+				if(even) then cross_zero;
+				else flip even_z;
+				flip even;
+			end
+			move_right;
+		end
+
+		check_remain_one_zero;
+
+		if(not even_z) then
+			reject;
+	end
+
+	define check_odd_len as
+	begin
+		clear odd_len;
+		while(found(zero)) do
+		begin
+			flip odd_len;
+			move_right;
+		end
+
+		-- If len is 1, accept
+		check_remain_one_zero;
+
+		-- If len is odd and is not 1, reject
+		if(odd_len) then reject;
+
+	end
+	
+	turn-right;
+
+	-- lenght zero. Is not a power of two
+	if(not found(zero)) then reject;
+
+	-- If odd lenght, is not a power of two (except '0' with size 1)
+	check_odd_len;
+
+	-- iterate to check if is a power of two
+	while(true) do scan;
+
+end-task
+
+
+begin-task check_string_2 on myworld 
+
+	define reject as
+	begin 
+		clear is_power_of_two;
+		terminate;
+	end
+
+	define accept as
+	begin
+		set is_power_of_two;
+		terminate;
+	end
+
+	define move_right as
+	begin
+		if looking-west then
+			begin
+				turn-right;
+				turn-right;
+			end
+		move;
+	end
+
+	define move_left as
+	begin
+		if looking-east then
+			begin
+				turn-right;
+				turn-right;
+			end
+		move;
+	end
+
+	define cross_zero as
+	begin
+		pick zero;
+		drop crossed;
+	end
+
+	define check_remain_one_zero as
+	begin
+
+		clear oz;
+		clear mtoz;
+
+		while(front-clear) do
+		begin
+			if(found(zero)) then
+			begin
+				if(not oz) then set oz;
+				else set mtoz;
+			end
+			move_left;
+		end
+
+		if( (not mtoz) and oz) then accept;
+
+	end
+
+	define scan as
+	begin
+		while(found(zero) or found(crossed)) do
+		begin
+			if(found(zero)) then
+			begin
+				if(even) then cross_zero;
+				else flip even_z;
+				flip even;
+			end
+			move_right;
+		end
+
+		check_remain_one_zero;
+
+		if(not even_z) then
+			reject;
+	end
+
+	define check_odd_len as
+	begin
+		clear odd_len;
+		while(found(zero)) do
+		begin
+			flip odd_len;
+			move_right;
+		end
+
+		-- If len is 1, accept
+		check_remain_one_zero;
+
+		-- If len is odd and is not 1, reject
+		if(odd_len) then reject;
+
+	end
+	
+	move; -- move to string 2
+	turn-right;
+
+	-- lenght zero. Is not a power of two
+	if(not found(zero)) then reject;
+
+	-- If odd lenght, is not a power of two (except '0' with size 1)
+	check_odd_len;
+
+	-- iterate to check if is a power of two
+	while(true) do scan;
+
+end-task
