@@ -30,3 +30,7 @@ En este programa willy recorre todo el mapa recogiendo oro y luego debe poner to
 ### xor.willy
 
 Este programa usa el mapa como si estuviesemos viendo cada fila como un entero y calcula el xor de los enteros que estan en las dos primeras filas y lo coloca en la tercera. Aqui el final goal siempre es true ya que no hay forma de revisar el xor. Este problema esta inspirado en el problema de que tienes un arreglo en el que todos los elementos estan repetidos, menos uno, la mejor solucion para esto es calcular el xor de todos los elementos del arreglo y el resultado de esto es la respuesta por las propiedades del xor.
+
+### error programs
+
+Finalmente hicimos 4 programas que demuestran todas las clases de errores en nuestro interpretador de Willy*: lexicograficos, parseo, contexto o ejecucion.

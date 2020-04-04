@@ -1,0 +1,24 @@
+{{
+	Program to show parse errors in Willy*
+}}
+
+
+begin-world myworld
+	World 16 3;
+	Basket of capacity 1000;
+
+	Boolean mybool with initial value true;
+
+	Object-type myobj of color blue;
+
+	Final goal is mybool;
+
+end-world
+
+
+begin-task x on myworld 
+
+	if mybool 
+		move;
+
+end-task
