@@ -18,10 +18,10 @@ begin-world myworld
 	Place 1 of gold at 2 3;
 	Place 1 of gold at 2 1;
 	Place 1 of gold at 4 1;
-	Place 1 of gold at 3 2;
+	Place 3 of gold at 3 2;
 	Place 1 of gold at 1 2;
 
-	Goal mygoal11 is 9 gold objects at 1 1;
+	Goal mygoal11 is 11 gold objects at 1 1;
 	Goal mygoal12 is 1 gold objects at 1 2;
 	Goal mygoal13 is 1 gold objects at 1 3;
 	Goal mygoal14 is 1 gold objects at 1 4;
@@ -90,7 +90,7 @@ begin-task x on myworld
 
 	while true do
 		begin
-			if found(gold) then
+			while found(gold) do
 				pick gold;
 
 			move_next;
