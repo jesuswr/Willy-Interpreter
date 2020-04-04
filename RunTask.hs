@@ -1,3 +1,14 @@
+{-
+An Interpreter for the subject "Traductores e Interpretadores" (Translators and Interpreters)
+ of the Simon Bolivar University (USB).
+  
+  Authors:
+  
+  Neil Villamizar  15-11523
+  
+  Jesus Wahrman    15-11540
+-}
+
 module RunTask where
 
 import AST
@@ -481,8 +492,15 @@ printWorld wId = do
   io $ putStr "  WILLY WORLD:  "
   io $ putStrLn $ replicate (max ((width `div` 2)-9) 0) '#'
   io $ setSGR [SetColor Foreground Vivid White]
-  io $ putStrLn $ map
+  io $ mapM_ printWithColor $ reverse $ map
+  return ()
 
+-- Gets a string and a color, and print that string in that color
+printWithColor :: (String, Color) -> IO ()
+printWithColor (str, c) = do
+  setSGR [SetColor Foreground Vivid c]
+  putStr str
+  setSGR [SetColor Foreground Vivid White]
 
 -- Function to wait for the user to continue execution
 getKeyPress :: String -> IO ()
@@ -506,7 +524,7 @@ wait cnt c = do
   if isJust a then do
     return (a)
   else do
-    let x = 40
+    let x = 67
     clearLine
     restoreCursor
     putStr $ replicate ((cnt `mod` x)+1) '.'

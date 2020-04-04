@@ -1,5 +1,17 @@
+{-
+An Interpreter for the subject "Traductores e Interpretadores" (Translators and Interpreters)
+ of the Simon Bolivar University (USB).
+  
+  Authors:
+  
+  Neil Villamizar  15-11523
+  
+  Jesus Wahrman    15-11540
+-}
+
 module Simulator where
 
+import System.Console.ANSI
 import AST
 import Lexer
 import Control.Monad.State
@@ -14,38 +26,55 @@ import System.Exit
 
 -- Function that takes the world id and returns a string with information
 -- of the world to be printed
-printMap :: String -> MyStateM (String)
+printMap :: String -> MyStateM [(String, Color)]
 printMap wId = do
   symT <- gets symTable
   let world = getWorld wId symT
-  let dir = "Looking " ++ willyDirection world ++ "\n"
+  let dir = ("Looking " ++ willyDirection world ++ "\n",White)
   let (c,r) = size world
   let maxSpace = length (show (c*r-1)) + 2
-  let map = unlines $ reverse $ lines $ concat $ printMatrix wId maxSpace (0,0) (c,r) symT
-  let worldObj = printWorldObjects (c,r) (desc world)
-  let basket = printBasketInfo (objectsInB world)
-  return ( map ++ dir ++ worldObj ++ basket )
+  --let map = unlines $ reverse $ lines $ concat $ printMatrix wId maxSpace (0,0) (c,r) symT
+  let map = reverse $ printMatrix wId maxSpace (0,r-1) (c,r) symT
+  let worldObj = (printWorldObjects (c,r) (desc world), White)
+  let basket = (printBasketInfo (objectsInB world), White)
+  return (basket:worldObj:dir:("\n",White):map)
 
 
 -- Takes the world id, the max space of an element of the matrix,
 -- the current position, the size of the map and the symbols table
 -- and return a list of string with the information of the map
-printMatrix :: String -> Int -> Pos -> Pos -> SymTable ->[String]
+printMatrix :: String -> Int -> Pos -> Pos -> SymTable ->[(String, Color)]
 printMatrix wId maxSpace (currCol,currRow) (maxCol,maxRow) symT
-  | currRow == maxRow = []
+  | currRow == -1 = []
   | currCol == maxCol = 
-    "\n":(printMatrix wId maxSpace (0,currRow+1) (maxCol,maxRow) symT)
+    ("\n",White):(printMatrix wId maxSpace (0,currRow-1) (maxCol,maxRow) symT)
   | getWStartPos wId symT == (currCol+1,currRow+1) =
-    willy:(printMatrix wId maxSpace (currCol+1,currRow) (maxCol,maxRow) symT)
+    (willy,Yellow):(printMatrix wId maxSpace (currCol+1,currRow) (maxCol,maxRow) symT)
   | cellWithoutWall (currCol+1) (currRow+1) wId symT = 
-    num:(printMatrix wId maxSpace (currCol+1,currRow) (maxCol,maxRow) symT)
+    (num, color):(printMatrix wId maxSpace (currCol+1,currRow) (maxCol,maxRow) symT)
   | otherwise = 
-    wall:(printMatrix wId maxSpace (currCol+1,currRow) (maxCol,maxRow) symT)
+    (wall, Magenta):(printMatrix wId maxSpace (currCol+1,currRow) (maxCol,maxRow) symT)
   where
     num   = getSquare (show $ maxCol*currRow + currCol) maxSpace
     wall  = getSquare "X" maxSpace
     willy = getSquare "W" maxSpace
+    color = getColor wId symT (currCol+1) (currRow+1)
 
+-- Check if a cell is empty. If it is, return White, else Cyan
+getColor :: String -> SymTable -> Int -> Int -> Color
+getColor wId symT c r = case Hash.lookup wId symT of 
+  (Just lst) -> do
+    let grid = desc $ getWorld wId symT
+    case Hash.lookup (c,r) grid of
+      (Just (Objects objs)) -> if sizeObj objs == 0
+        then White
+        else Cyan
+      otherwise -> White
+  otherwise -> White
+
+-- Returns the amount of objects in a cell of the world
+sizeObj :: ObjectsInCell -> Int
+sizeObj objs = snd $ foldr (\(_,x) (_,y) -> ("", x + y)) ("",0) (Hash.toList objs)
 
 -- Receives a string and an integer and returns a new string that
 -- is the same as the given one plus some spaces at the end
